@@ -1,0 +1,9 @@
+# Build
+target/
+Cargo.lock
+Cargo.toml
+src/*.rs
+advent_code_2024_go
+
+# OS
+.DS_Store
