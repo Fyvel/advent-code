@@ -50,9 +50,9 @@ if [ ! -f "main.go" ]; then
 	echo "❌ - I Gon't"
 else
 	#  Warmup runs
-	for i in $(seq 1 $RUNS); do ./advent_code_2024_go >/dev/null 2>&1; done
 	./advent_code_2024_go
-	{ time ./advent_code_2024_go; } 2>&1 | grep real | awk '{printf "	🚀 - %s\n", $2}'
+	{ time ./advent_code_2024_go; } 2>&1 | grep real | awk '{printf "🚀 Single - %s\n", $2}'
+	{ time for i in $(seq 1 $RUNS); do ./advent_code_2024_go >/dev/null 2>&1; done; } 2>&1 | grep real | awk '{printf "🚀 Total - %s\n", $2}'
 fi
 
 echo "🟠 - Rust"
@@ -60,9 +60,9 @@ if [ ! -f "main.rs" ]; then
 	echo "❌ - I Rusn't"
 else
 	#  Warmup runs
-	for i in $(seq 1 $RUNS); do ./target/release/advent_code_2024_rust >/dev/null 2>&1; done
 	./target/release/advent_code_2024_rust
-	{ time ./target/release/advent_code_2024_rust; } 2>&1 | grep real | awk '{printf "	🚀 - %s\n", $2}'
+	{ time ./target/release/advent_code_2024_rust; } 2>&1 | grep real | awk '{printf "🚀 Single - %s\n", $2}'
+	{ time for i in $(seq 1 $RUNS); do ./target/release/advent_code_2024_rust >/dev/null 2>&1; done; } 2>&1 | grep real | awk '{printf "🚀 Total - %s\n", $2}'
 fi
 
 echo "⚪️ - Bun"
@@ -70,9 +70,9 @@ if [ ! -f "index.js" ]; then
 	echo "❌ - I Bun't"
 else
 	#  Warmup runs
-	for i in $(seq 1 $RUNS); do bun run index.js >/dev/null 2>&1; done
 	bun run index.js
-	{ time bun run index.js; } 2>&1 | grep real | awk '{printf "	🚀 - %s\n", $2}'
+	{ time bun run index.js; } 2>&1 | grep real | awk '{printf "🚀 Single - %s\n", $2}'
+	{ time for i in $(seq 1 $RUNS); do bun run index.js >/dev/null 2>&1; done; } 2>&1 | grep real | awk '{printf "🚀 Total - %s\n", $2}'
 fi
 
 echo "🟢 - Node"
@@ -80,7 +80,7 @@ if [ ! -f "index.js" ]; then
 	echo "❌ - I Noden't"
 else
 	#  Warmup runs
-	for i in $(seq 1 $RUNS); do node index.js >/dev/null 2>&1; done
 	node index.js
-	{ time node index.js; } 2>&1 | grep real | awk '{printf "	🚀 - %s\n", $2}'
+	{ time node index.js; } 2>&1 | grep real | awk '{printf "🚀 Single - %s\n", $2}'
+	{ time for i in $(seq 1 $RUNS); do node index.js >/dev/null 2>&1; done; } 2>&1 | grep real | awk '{printf "🚀 Total - %s\n", $2}'
 fi

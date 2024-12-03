@@ -42,6 +42,14 @@ readData()
 ### Go
 
 ```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
 func readData() ([]string, error) {
 	data, err := os.ReadFile(filepath.Join(".", "data.txt"))
 	if err != nil {
@@ -75,7 +83,6 @@ func main() {
 use std::fs;
 use std::path::Path;
 use std::error::Error;
-use std::collections::HashMap;
 use tokio;
 
 async fn read_data() -> Result<Vec<String>, Box<dyn Error>> {
