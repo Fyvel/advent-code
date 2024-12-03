@@ -36,6 +36,7 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
+regex = "1.7"
 EOF
 
 	cargo build --release
