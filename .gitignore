@@ -3,7 +3,8 @@ target/
 Cargo.lock
 Cargo.toml
 src/*.rs
-advent_code_2024_go
+advent_code_2024_go*
+advent_code_2024_rust*
 
 # OS
 .DS_Store
