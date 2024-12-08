@@ -48,6 +48,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func readData() ([]string, error) {
@@ -58,22 +59,22 @@ func readData() ([]string, error) {
 	return strings.Split(string(data), "\n"), nil
 }
 
-func formatData(rows []string) { }
+func formatData(rows []string) {}
 
-func part1(){}
+func part1() {}
 
-func part2(){}
+// func part2() {}
 
 func main() {
-	reports, err := readData()
+	data, err := readData()
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Get rekt:", err)
 		return
 	}
 
-	formattedData := formatData(reports)
+	formattedData := formatData(data)
 	part1(formattedData)
-	part2(formattedData)
+	// part2(formattedData)
 }
 ```
 
