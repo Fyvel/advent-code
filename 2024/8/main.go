@@ -175,5 +175,5 @@ func main() {
 
 	formattedData, err := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }

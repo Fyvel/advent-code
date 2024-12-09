@@ -43,7 +43,8 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 regex = "1.7"
-itertools = "0.10.5"'
+itertools = "0.10.5"
+rayon = "1.8"'
 
 	# Copy comparison Rust files
 	for file in alt-*.rs; do
