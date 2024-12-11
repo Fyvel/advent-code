@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 func readData() ([]string, error) {
@@ -65,24 +66,30 @@ func part1(stones []int) int {
 	return len(stones)
 }
 
-func calculateStoneSize(stone int, depth int, memo map[string]int) int {
+func calculateStoneSize(stone int, depth int, memo map[string]int, syncLock *sync.Mutex) int {
 	if depth == 0 {
 		return 1
 	}
 
 	key := fmt.Sprintf("%d_%d", stone, depth)
 
-	if cached, exists := memo[key]; exists {
+	syncLock.Lock()
+	cached, exists := memo[key]
+	syncLock.Unlock()
+
+	if exists {
 		return cached
 	}
 
 	nextStones := processStone(stone)
 	localSum := 0
 	for _, nextStone := range nextStones {
-		localSum += calculateStoneSize(nextStone, depth-1, memo)
+		localSum += calculateStoneSize(nextStone, depth-1, memo, syncLock)
 	}
 
+	syncLock.Lock()
 	memo[key] = localSum
+	syncLock.Unlock()
 	return localSum
 }
 
@@ -90,14 +97,24 @@ func part2(stones []int) int {
 	depth := 75
 	results := make(chan int, len(stones))
 
+	var syncLock sync.Mutex
+	var waitGroup sync.WaitGroup
+	memo := make(map[string]int)
+
 	for _, stone := range stones {
+
+		waitGroup.Add(1)
+
 		go func(current int) {
-			localMemo := make(map[string]int)
-			result := calculateStoneSize(current, depth, localMemo)
+			defer waitGroup.Done()
+
+			result := calculateStoneSize(current, depth, memo, &syncLock)
 			results <- result
+			// fmt.Printf("stone %d - count %d \n", i, result)
 		}(stone)
-		// fmt.Printf("stone %d - sum %d\n", stone, sum)
 	}
+
+	waitGroup.Wait()
 
 	sum := 0
 	for i := 0; i < len(stones); i++ {
