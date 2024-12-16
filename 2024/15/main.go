@@ -5,6 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/eiannone/keyboard"
 )
 
 func readData() ([]string, error) {
@@ -206,9 +209,9 @@ func (g *Game) setup(grid [][]string) *Game {
 				if g.isScaled {
 					entity.end = Vector{baseX + 1, r}
 					forward := Entity{Vector{baseX, r}, Vector{baseX + 1, r}}
-					// backward := Entity{Vector{baseX + 1, r}, Vector{baseX, r}}
+					backward := Entity{Vector{baseX + 1, r}, Vector{baseX, r}}
 					g.boxes[forward] = true
-					// g.boxes[backward] = true
+					g.boxes[backward] = true
 				} else {
 					g.boxes[entity] = true
 				}
@@ -224,13 +227,13 @@ func (g *Game) moveRobot(move Vector) bool {
 		Vector{g.robot.end.x + move.x, g.robot.end.y + move.y},
 	}
 
-	if g.isWall(nextPosition.start) {
+	if g.isWall(nextPosition.start) || g.isWall(nextPosition.end) {
 		return false
 	}
 
-	if g.isBox(nextPosition.start) {
-		box := g.getBox(nextPosition.start)
-		if !g.moveBox(box, move, 0) {
+	if g.isBox(nextPosition.start) || g.isBox(nextPosition.end) {
+		leftBox, rightBox := g.getBox(nextPosition.start), g.getBox(nextPosition.end)
+		if !g.moveBox(leftBox, move, 0) || !g.moveBox(rightBox, move, 0) {
 			return false
 		}
 
@@ -260,7 +263,6 @@ func (g *Game) moveRobot(move Vector) bool {
 				}
 			}
 		}
-
 	}
 
 	g.robot = nextPosition
@@ -353,31 +355,31 @@ func part2(inputs Inputs) {
 	game.setup(inputs.grid)
 	game.render()
 
-	for _, move := range inputs.moves {
-		game.moveRobot(move)
-	}
-
-	// for m, move := range inputs.moves {
-	// 	var moveStr string
-	// 	switch move {
-	// 	case Vector{0, -1}:
-	// 		moveStr = "^"
-	// 	case Vector{0, 1}:
-	// 		moveStr = "v"
-	// 	case Vector{-1, 0}:
-	// 		moveStr = "<"
-	// 	case Vector{1, 0}:
-	// 		moveStr = ">"
-	// 	}
-	// 	game.render()
-	// 	if game.moveRobot(move) {
-	// 		fmt.Printf("Move: %s\n", moveStr)
-	// 	} else {
-	// 		fmt.Printf("Move: %s - Nope\n", moveStr)
-	// 	}
-	// 	fmt.Printf("Move: %d out of %d\n", m+1, len(inputs.moves))
-	// 	time.Sleep(50 * time.Millisecond)
+	// for _, move := range inputs.moves {
+	// 	game.moveRobot(move)
 	// }
+
+	for m, move := range inputs.moves {
+		var moveStr string
+		switch move {
+		case Vector{0, -1}:
+			moveStr = "^"
+		case Vector{0, 1}:
+			moveStr = "v"
+		case Vector{-1, 0}:
+			moveStr = "<"
+		case Vector{1, 0}:
+			moveStr = ">"
+		}
+		game.render()
+		if game.moveRobot(move) {
+			fmt.Printf("Move: %s\n", moveStr)
+		} else {
+			fmt.Printf("Move: %s - Nope\n", moveStr)
+		}
+		fmt.Printf("Move: %d out of %d\n", m+1, len(inputs.moves))
+		time.Sleep(50 * time.Millisecond)
+	}
 
 	game.render()
 
@@ -400,6 +402,68 @@ func main() {
 	}
 
 	formattedData := formatData(data)
-	part1(formattedData)
+	// part1(formattedData)
 	part2(formattedData)
+}
+
+func main2() {
+	data, err := readData()
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	formattedData := formatData(data)
+
+	fmt.Println("Choose mode:")
+	fmt.Println("1. Auto run (using data.txt)")
+	fmt.Println("2. Creator mode (WASD to move, Q to quit)")
+
+	var choice string
+	fmt.Scanln(&choice)
+
+	if choice == "1" {
+		part1(formattedData)
+		part2(formattedData)
+	} else if choice == "2" {
+		game := Game{isScaled: true}
+		game.setup(formattedData.grid)
+
+		fmt.Print("\033[H\033[2J")
+		fmt.Println("Use WASD to move, Q to quit")
+
+		for {
+			game.render()
+			move := getPlayerMove()
+			game.moveRobot(move)
+			fmt.Print("\033[H\033[2J")
+		}
+	}
+}
+
+func getPlayerMove() Vector {
+	if err := keyboard.Open(); err != nil {
+		panic(err)
+	}
+	defer keyboard.Close()
+
+	char, _, err := keyboard.GetKey()
+	if err != nil {
+		return Vector{0, 0}
+	}
+
+	switch char {
+	case 'w', 'W':
+		return Vector{0, -1}
+	case 's', 'S':
+		return Vector{0, 1}
+	case 'a', 'A':
+		return Vector{-1, 0}
+	case 'd', 'D':
+		return Vector{1, 0}
+	case 'q', 'Q':
+		os.Exit(1)
+		return Vector{0, 0}
+	default:
+		return Vector{0, 0}
+	}
 }
