@@ -21,18 +21,20 @@ type Vector struct {
 }
 
 type Maze struct {
-	grid  [][]string
-	walls map[Vector]bool
-	start Vector
-	end   Vector
-	score int
+	grid      [][]string
+	walls     map[Vector]bool
+	start     Vector
+	end       Vector
+	score     int
+	bestPaths map[Vector]bool
 }
 
 func formatData(rows []string) Maze {
 	maze := Maze{
-		grid:  make([][]string, len(rows)),
-		walls: make(map[Vector]bool),
-		score: int(^uint(0) >> 1),
+		grid:      make([][]string, len(rows)),
+		walls:     make(map[Vector]bool),
+		score:     int(^uint(0) >> 1),
+		bestPaths: make(map[Vector]bool),
 	}
 	for r, row := range rows {
 		maze.grid[r] = make([]string, len(row))
@@ -56,6 +58,7 @@ type QueueItem struct {
 	position  Vector
 	direction int
 	score     int
+	path      []Vector
 }
 type Queue []*QueueItem
 
@@ -83,26 +86,35 @@ func (maze *Maze) solve() int {
 		position:  maze.start,
 		direction: 1,
 		score:     0,
+		path:      []Vector{maze.start},
 	})
 
 	for queue.Len() > 0 {
 		current := queue.Pop().(*QueueItem)
 
-		if current.score >= maze.score {
+		if current.score > maze.score {
 			continue
 		}
 
 		key := fmt.Sprintf("%d_%d_%d", current.position.x, current.position.y, current.direction)
 		if _, exist := visited[key]; exist {
-			if visited[key] <= current.score {
+			if visited[key] < current.score {
 				continue
 			}
 		}
 		visited[key] = current.score
 
 		if current.position == maze.end {
-			maze.score = current.score
-			return current.score
+			// reset for new best score
+			if current.score < maze.score {
+				maze.bestPaths = make(map[Vector]bool)
+				maze.score = current.score
+			}
+			// mark best path
+			for _, tile := range current.path {
+				maze.bestPaths[tile] = true
+			}
+			continue
 		}
 
 		// forward - left - right
@@ -112,19 +124,40 @@ func (maze *Maze) solve() int {
 		}
 		if !maze.walls[nextPosition] && nextPosition.x >= 0 && nextPosition.y >= 0 &&
 			nextPosition.y < len(maze.grid) && nextPosition.x < len(maze.grid[0]) {
-			heap.Push(queue, &QueueItem{nextPosition, current.direction, current.score + 1})
+			newPath := make([]Vector, len(current.path))
+			copy(newPath, current.path)
+			newPath = append(newPath, nextPosition)
+			heap.Push(queue, &QueueItem{
+				position:  nextPosition,
+				direction: current.direction,
+				score:     current.score + 1,
+				path:      newPath,
+			})
 		}
 
 		leftDir := (current.direction + 3) % 4
-		heap.Push(queue, &QueueItem{current.position, leftDir, current.score + 1000})
+		newPathLeft := make([]Vector, len(current.path))
+		copy(newPathLeft, current.path)
+		heap.Push(queue, &QueueItem{
+			position:  current.position,
+			direction: leftDir,
+			score:     current.score + 1000,
+			path:      newPathLeft,
+		})
 
 		rightDir := (current.direction + 1) % 4
-		heap.Push(queue, &QueueItem{current.position, rightDir, current.score + 1000})
+		newPathRight := make([]Vector, len(current.path))
+		copy(newPathRight, current.path)
+		heap.Push(queue, &QueueItem{
+			position:  current.position,
+			direction: rightDir,
+			score:     current.score + 1000,
+			path:      newPathRight,
+		})
 	}
 
 	if maze.score == int(^uint(0)>>1) {
 		maze.score = -1
-		return -1
 	}
 	return maze.score
 }
@@ -133,10 +166,13 @@ func part1(maze Maze) int {
 	maze.solve()
 	fmt.Println(maze.score)
 	return maze.score
-
 }
 
-// func part2() {}
+func part2(maze Maze) int {
+	maze.solve()
+	fmt.Println(len(maze.bestPaths))
+	return len(maze.bestPaths)
+}
 
 func main() {
 	data, err := readData()
@@ -147,5 +183,5 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }
