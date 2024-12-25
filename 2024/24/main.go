@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -101,6 +102,58 @@ func part1(wireValues map[string]int, inputs []Gate) {
 	fmt.Println("Part 1:", resultDecimal)
 }
 
+func findSwappedGates(gates []Gate) []string {
+	swappedGates := make(map[string]bool)
+	const WiresMaxLength = 45
+
+	for _, gate := range gates {
+		switch {
+		case gate.output[0] == 'z':
+			wire, _ := strconv.Atoi(gate.output[1:])
+			if gate.operator != "XOR" && wire != WiresMaxLength {
+				swappedGates[gate.output] = true
+			}
+		case gate.operator == "XOR" && !isXOrY(gate.input1) && !isXOrY(gate.input2) && gate.input1[0] != gate.input2[0]:
+			swappedGates[gate.output] = true
+		case gate.operator == "XOR" && isXOrY(gate.input1) && isXOrY(gate.input2) && gate.input1[0] != gate.input2[0]:
+			if !isGateOutputUsed(gates, gate.output, "XOR") {
+				swappedGates[gate.output] = true
+			}
+		case gate.operator == "AND" && isXOrY(gate.input1) && isXOrY(gate.input2) && gate.input1[0] != gate.input2[0]:
+			if !isGateOutputUsed(gates, gate.output, "OR") {
+				swappedGates[gate.output] = true
+			}
+		}
+	}
+
+	result := make([]string, 0, len(swappedGates))
+	for gate := range swappedGates {
+		result = append(result, gate)
+	}
+	return result
+}
+
+func isGateOutputUsed(gates []Gate, output, operator string) bool {
+	for _, gate := range gates {
+		if gate.operator == operator && (gate.input1 == output || gate.input2 == output) {
+			return true
+		}
+	}
+	return false
+}
+
+func isXOrY(wire string) bool {
+	temp, _ := strconv.Atoi(wire[1:])
+	return (wire[0] == 'x' || wire[0] == 'y') && temp != 0
+}
+
+func part2(gates []Gate) {
+	swappedGates := findSwappedGates(gates)
+	sort.Strings(swappedGates)
+
+	fmt.Println("Part 2:", strings.Join(swappedGates, ","))
+}
+
 func main() {
 	data, err := readData()
 	if err != nil {
@@ -110,5 +163,5 @@ func main() {
 
 	wireValues, gates := formatData(data)
 	part1(wireValues, gates)
-	// part2(wireValues, gates)
+	part2(gates)
 }
