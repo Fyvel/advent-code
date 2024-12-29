@@ -34,22 +34,14 @@ func formatData(rows []string) []DoorCode {
 	return doorCodes
 }
 
-func (keypad *Keypad) generateInstructions(code string) []string {
-	instructions := []string{""}
+func (keypad *Keypad) generateInstructions(code string) string {
+	instructions := ""
 	currentPosition := keypad.position
 
 	for _, char := range code {
-		// get all possible paths
-		paths := keypad.pathFromTo[currentPosition][string(char)]
-
-		// add each path at the end of each instruction
-		newInstructions := []string{}
-		for _, instruction := range instructions {
-			for _, path := range paths {
-				newInstructions = append(newInstructions, instruction+path)
-			}
-		}
-		instructions = newInstructions
+		// add path to instruction
+		instructions += keypad.pathFromTo[currentPosition][string(char)]
+		// update position
 		currentPosition = string(char)
 	}
 	return instructions
@@ -57,11 +49,13 @@ func (keypad *Keypad) generateInstructions(code string) []string {
 
 type Position [2]int
 
+type KeypadPathMap map[string]map[string]string
+
 type Keypad struct {
 	keypad     [][]string
 	position   string
 	directions [4]Position
-	pathFromTo map[string]map[string][]string
+	pathFromTo KeypadPathMap
 }
 
 func getNumericKeypad() *Keypad {
@@ -79,149 +73,149 @@ func getNumericKeypad() *Keypad {
 			{1, 0},  // v
 			{0, -1}, // <
 		},
-		pathFromTo: map[string]map[string][]string{
+		pathFromTo: KeypadPathMap{
 			"A": {
-				"0": {"<A"},
-				"1": {"^<<A"}, // , "<^<A"},
-				"2": {"^<A", "<^A"},
-				"3": {"^A"},
-				"4": {"^^<<A"}, // , "^<^<A", "^<<^A", "<^<^A", "<^^<A"},
-				"5": {"^^<A", "<^^A"},
-				"6": {"^^A"},
-				"7": {"^^^<<A"},         // , "^^<^<A", "^<<^^A", "^<^<^A", "^<^^<A", "<^<^^A", "^^<<^A", "<^^<^A", "<^^^<A"},
-				"8": {"^^^<A", "<^^^A"}, // , "^<^^A", "^^<^A"},
-				"9": {"^^^A"},
-				"A": {"A"},
+				"0": "<A",
+				"7": "^^^<<A",
+				"8": "<^^^A",
+				"9": "^^^A",
+				"4": "^^<<A",
+				"5": "<^^A",
+				"6": "^^A",
+				"1": "^<<A",
+				"2": "<^A",
+				"3": "^A",
+				"A": "A",
 			},
 			"0": {
-				"0": {"A"},
-				"1": {"^<A"},
-				"2": {"^A"},
-				"3": {"^>A", ">^A"},
-				"4": {"^^<A"}, //  "^<^A"},
-				"5": {"^^A"},
-				"6": {"^^>A", ">^^A"}, // , "^>^A"},
-				"7": {"^^^<A"},        // , "^^<^A", "^<^^A"},
-				"8": {"^^^A"},
-				"9": {"^^^>A", ">^^^A"}, // , "^>^^A", "^^>^A"},
-				"A": {">A"},
+				"0": "A",
+				"7": "^^^<A",
+				"8": "^^^A",
+				"9": "^^^>A",
+				"4": "^<^A",
+				"5": "^^A",
+				"6": "^^>A",
+				"1": "^<A",
+				"2": "^A",
+				"3": "^>A",
+				"A": ">A",
 			},
 			"1": {
-				"0": {">vA"},
-				"7": {"^^A"},
-				"8": {"^^>A", ">^^A"},   // , "^>^A"},
-				"9": {"^^>>A", ">>^^A"}, // , ">^>^A", "^>^>A", "^>>^A", ">^^>A"},
-				"4": {"^A"},
-				"5": {"^>A", ">^A"},
-				"6": {"^>>A", ">>^A"}, // , ">^>A"},
-				"1": {"A"},
-				"2": {">A"},
-				"3": {">>A"},
-				"A": {">>vA"}, // , ">v>A"},
+				"0": ">vA",
+				"7": "^^A",
+				"8": "^^>A",
+				"9": "^^>>A",
+				"4": "^A",
+				"5": "^>A",
+				"6": "^>>A",
+				"1": "A",
+				"2": ">A",
+				"3": ">>A",
+				"A": ">>vA",
 			},
 			"2": {
-				"0": {"vA"},
-				"7": {"^^<A", "<^^A"}, // , "^<^A"},
-				"8": {"^^A"},
-				"9": {"^^>A", ">^^A"}, // , "^>^A"},
-				"4": {"^<A", "<^A"},
-				"5": {"^A"},
-				"6": {"^>A", ">^A"},
-				"1": {"<A"},
-				"2": {"A"},
-				"3": {">A"},
-				"A": {">vA", "v>A"},
+				"0": "vA",
+				"7": "<^^A",
+				"8": "^^A",
+				"9": "^^>A",
+				"4": "<^A",
+				"5": "^A",
+				"6": "^>A",
+				"1": "<A",
+				"2": "A",
+				"3": ">A",
+				"A": "v>A",
 			},
 			"3": {
-				"0": {"<vA", "v<A"},
-				"7": {"^^<<A", "<<^^A"}, // , "<^<^A", "^<^<A", "^<<^A"},
-				"8": {"^^<A", "<^^A"},   // , "^<^A"},
-				"9": {"^^A"},
-				"4": {"^<<A", "<<^A"}, // , "<^<A"},
-				"5": {"^<A", "<^A"},
-				"6": {"^A"},
-				"1": {"<<A"},
-				"2": {"<A"},
-				"3": {"A"},
-				"A": {"vA"},
+				"0": "<vA",
+				"7": "<<^^A",
+				"8": "<^^A",
+				"9": "^^A",
+				"4": "<<^A",
+				"5": "<^A",
+				"6": "^A",
+				"1": "<<A",
+				"2": "<A",
+				"3": "A",
+				"A": "vA",
 			},
 			"4": {
-				"0": {">vvA"}, // , "v>vA"},
-				"7": {"^A"},
-				"8": {"^>A", ">^A"},
-				"9": {">>^A", "^>>A"}, // , ">^>A"},
-				"4": {"A"},
-				"5": {">A"},
-				"6": {">>A"},
-				"1": {"vA"},
-				"2": {"v>A", ">vA"},
-				"3": {">>vA", "v>>A"}, // , ">v>A"},
-				"A": {">>vvA"},        // , ">v>vA", "v>>vA", "v>v>A", ">vv>A"},
+				"0": ">vvA",
+				"7": "^A",
+				"8": "^>A",
+				"9": "^>>A",
+				"4": "A",
+				"5": ">A",
+				"6": ">>A",
+				"1": "vA",
+				"2": "v>A",
+				"3": "v>>A",
+				"A": ">>vvA",
 			},
 			"5": {
-				"0": {"vvA"},
-				"7": {"^<A", "<^A"},
-				"8": {"^A"},
-				"9": {"^>A", ">^A"},
-				"4": {"<A"},
-				"5": {"A"},
-				"6": {">A"},
-				"1": {"v<A", "<vA"},
-				"2": {"vA"},
-				"3": {"v>A", ">vA"},
-				"A": {">vvA", "vv>A"}, // , "v>vA"},
+				"0": "vvA",
+				"7": "<^A",
+				"8": "^A",
+				"9": "^>A",
+				"4": "<A",
+				"5": "A",
+				"6": ">A",
+				"1": "<vA",
+				"2": "vA",
+				"3": "v>A",
+				"A": "vv>A",
 			},
 			"6": {
-				"0": {"<vvA", "vv<A"}, // , "v<vA"},
-				"7": {"<<^A", "^<<A"}, // , "<^<A"},
-				"8": {"^<A", "<^A"},
-				"9": {"^A"},
-				"4": {"<<A"},
-				"5": {"<A"},
-				"6": {"A"},
-				"1": {"<<vA", "v<<A"}, // , "<v<A"},
-				"2": {"v<A"},          // , "<vA"},
-				"3": {"vA"},
-				"A": {"vvA"},
+				"0": "<vvA",
+				"7": "<<^A",
+				"8": "<^A",
+				"9": "^A",
+				"4": "<<A",
+				"5": "<A",
+				"6": "A",
+				"1": "<<vA",
+				"2": "<vA",
+				"3": "vA",
+				"A": "vvA",
 			},
 			"7": {
-				"0": {">vvvA"}, // , "v>vvA", "vv>vA"},
-				"7": {"A"},
-				"8": {">A"},
-				"9": {">>A"},
-				"4": {"vA"},
-				"5": {">vA", "v>A"},
-				"6": {">>vA", "v>>A"}, // , ">v>A"},
-				"1": {"vvA"},
-				"2": {">vvA", "vv>A"},   // , "v>vA"},
-				"3": {">>vvA", "vv>>A"}, // , ">v>vA", "v>v>A", "v>>vA"},
-				"A": {">>vvvA"},         // , ">v>vvA", "vv>>vA", "v>v>vA", ">vv>vA", "v>vv>A", "v>>vvA", "vv>v>A", ">vvv>A"},
+				"0": ">vvvA",
+				"7": "A",
+				"8": ">A",
+				"9": ">>A",
+				"4": "vA",
+				"5": "v>A",
+				"6": "v>>A",
+				"1": "vvA",
+				"2": "vv>A",
+				"3": "vv>>A",
+				"A": ">>vvvA",
 			},
 			"8": {
-				"0": {"vvvA"},
-				"7": {"<A"},
-				"8": {"A"},
-				"9": {">A"},
-				"4": {"v<A", "<vA"},
-				"5": {"^A"},
-				"6": {"v>A", ">vA"},
-				"1": {"vv<A", "<vvA"}, // , "v<vA"},
-				"2": {"vvA"},
-				"3": {"vv>A", ">vvA"},   // , "v>vA"},
-				"A": {">vvvA", "vvv>A"}, // , "v>vvA", "vv>vA"},
+				"0": "vvvA",
+				"7": "<A",
+				"8": "A",
+				"9": ">A",
+				"4": "<vA",
+				"5": "^A",
+				"6": "v>A",
+				"1": "<vvA",
+				"2": "vvA",
+				"3": "vv>A",
+				"A": "vvv>A",
 			},
 			"9": {
-				"0": {"<vvvA", "vvv<A"}, // , "vv<vA", "v<vvA"},
-				"7": {"<<A"},
-				"8": {"<A"},
-				"9": {"A"},
-				"4": {"<<vA", "v<<A"}, // , "<v<A"},
-				"5": {"<vA", "v<A"},
-				"6": {"vA"},
-				"1": {"<<vvA", "vv<<A"}, // , "v<v<A", "<v<vA", "v<<vA", "<vv<A"},
-				"2": {"<vvA", "vv<A"},   // , "v<vA"},
-				"3": {"vvA"},
-				"A": {"vvvA"},
+				"0": "<vvvA",
+				"7": "<<A",
+				"8": "<A",
+				"9": "A",
+				"4": "<<vA",
+				"5": "<vA",
+				"6": "vA",
+				"1": "<<vvA",
+				"2": "<vvA",
+				"3": "vvA",
+				"A": "vvvA",
 			},
 		},
 	}
@@ -240,41 +234,41 @@ func getDirectionalKeypad() *Keypad {
 			{-1, 0}, // ^
 			{0, -1}, // <
 		},
-		pathFromTo: map[string]map[string][]string{
+		pathFromTo: KeypadPathMap{
 			"A": {
-				"^": {"<A"},
-				">": {"vA"},
-				"v": {"<vA"},  // , "v<A"},
-				"<": {"v<<A"}, // , "<v<A"},
-				"A": {"A"},
+				"^": "<A",
+				">": "vA",
+				"v": "<vA",
+				"<": "v<<A",
+				"A": "A",
 			},
 			"<": {
-				"^": {">^A"},
-				"v": {">A"},
-				">": {">>A"},
-				"A": {">>^A"}, // , ">^>A"},
-				"<": {"A"},
+				"^": ">^A",
+				"v": ">A",
+				">": ">>A",
+				"A": ">>^A",
+				"<": "A",
 			},
 			"v": {
-				"^": {"^A"},
-				"<": {"<A"},
-				">": {">A"},
-				"A": {">^A"}, // , "^>A"},
-				"v": {"A"},
+				"^": "^A",
+				"<": "<A",
+				">": ">A",
+				"A": "^>A",
+				"v": "A",
 			},
 			">": {
-				"v": {"<A"},
-				"<": {"<<A"},
-				"A": {"^A"},
-				"^": {"^<A"}, // , "<^A"},
-				">": {"A"},
+				"v": "<A",
+				"<": "<<A",
+				"A": "^A",
+				"^": "<^A",
+				">": "A",
 			},
 			"^": {
-				"v": {"vA"},
-				"<": {"v<A"},
-				"A": {">A"},
-				">": {">vA"}, // , "v>A"},
-				"^": {"A"},
+				"v": "vA",
+				"<": "v<A",
+				"A": ">A",
+				">": "v>A",
+				"^": "A",
 			},
 		},
 	}
@@ -282,24 +276,11 @@ func getDirectionalKeypad() *Keypad {
 
 func part1(doorCodes []DoorCode) int {
 	sum := 0
-	instructions := []string{}
 
 	for _, doorCode := range doorCodes {
-		shortestInstruction := ""
-		doorInstructions := getNumericKeypad().generateInstructions(doorCode.code)
-		for _, doorInstruction := range doorInstructions {
-			robotInstructions := getDirectionalKeypad().generateInstructions(doorInstruction)
-			for _, robotInstruction := range robotInstructions {
-				instructions = getDirectionalKeypad().generateInstructions(robotInstruction)
-			}
-		}
-
-		// shortest instruction
-		for _, instruction := range instructions {
-			if shortestInstruction == "" || len(instruction) < len(shortestInstruction) {
-				shortestInstruction = instruction
-			}
-		}
+		doorInstruction := getNumericKeypad().generateInstructions(doorCode.code)
+		robotInstruction := getDirectionalKeypad().generateInstructions(doorInstruction)
+		shortestInstruction := getDirectionalKeypad().generateInstructions(robotInstruction)
 
 		fmt.Println(doorCode.code, ":", len(shortestInstruction), "x", doorCode.num)
 		sum += len(shortestInstruction) * doorCode.num
@@ -309,9 +290,54 @@ func part1(doorCodes []DoorCode) int {
 	return sum
 }
 
+type MemoKey struct {
+	path  string
+	level int
+}
+
+// store the length directly since concatenated string are too long
+var memo = make(map[MemoKey]int)
+
+func (k *Keypad) countInstructionsLength(instructionsPath string, depth int) int {
+	key := MemoKey{path: instructionsPath, level: depth}
+	if value, exists := memo[key]; exists {
+		return value
+	}
+
+	length := 0
+	if depth == 0 {
+		length = len(instructionsPath)
+		memo[key] = length
+		return length
+	}
+
+	currentPosition := k.position
+	for _, char := range instructionsPath {
+		if currentPosition == string(char) {
+			length += len(k.pathFromTo[currentPosition][string(char)])
+			currentPosition = string(char)
+			continue
+		}
+
+		path := k.pathFromTo[currentPosition][string(char)]
+		length += k.countInstructionsLength(path, depth-1)
+		currentPosition = string(char)
+	}
+
+	memo[key] = length
+	return length
+}
+
 func part2(doorCodes []DoorCode) int {
 	sum := 0
-	// numberOfRobots := 25
+	numberOfRobots := 25
+
+	for _, doorCode := range doorCodes {
+		doorInstruction := getNumericKeypad().generateInstructions(doorCode.code)
+		instruction := getDirectionalKeypad().countInstructionsLength(doorInstruction, numberOfRobots)
+		fmt.Println(doorCode.code, ":", instruction, "x", doorCode.num)
+		sum += instruction * doorCode.num
+	}
 
 	fmt.Println("Part 2:", sum)
 	return sum
