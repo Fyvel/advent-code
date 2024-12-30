@@ -66,11 +66,12 @@ type Entity struct {
 }
 
 type Game struct {
-	robot    Entity
-	walls    map[Entity]bool
-	boxes    map[Entity]bool
-	grid     [][]string
-	isScaled bool
+	robot       Entity
+	walls       map[Entity]bool
+	boxes       map[Entity]bool
+	grid        [][]string
+	isScaled    bool
+	playerMoves []Vector
 }
 
 func (g *Game) isWall(v Vector) bool {
@@ -227,40 +228,40 @@ func (g *Game) moveRobot(move Vector) bool {
 		Vector{g.robot.end.x + move.x, g.robot.end.y + move.y},
 	}
 
-	if g.isWall(nextPosition.start) || g.isWall(nextPosition.end) {
+	if g.isWall(nextPosition.start) {
 		return false
 	}
 
-	if g.isBox(nextPosition.start) || g.isBox(nextPosition.end) {
-		leftBox, rightBox := g.getBox(nextPosition.start), g.getBox(nextPosition.end)
-		if !g.moveBox(leftBox, move, 0) || !g.moveBox(rightBox, move, 0) {
-			return false
-		}
+	originalBoxes := make(map[Entity]bool)
+	for k, v := range g.boxes {
+		originalBoxes[k] = v
+	}
 
-		// check for backwards or forwards cell
-		if move.x != 0 {
-			checkPosition := nextPosition.start
-			if move.x > 0 {
-				checkPosition = nextPosition.end
-			}
-			if g.isBox(checkPosition) {
-				adjacentBox := g.getBox(checkPosition)
-				if !g.moveBox(adjacentBox, move, 0) {
-					return false
-				}
+	// check for backwards or forwards cell
+	if move.x != 0 {
+		checkPosition := nextPosition.start
+		if move.x > 0 {
+			checkPosition = nextPosition.end
+		}
+		if g.isBox(checkPosition) {
+			adjacentBox := g.getBox(checkPosition)
+			if !g.moveBox(adjacentBox, move, 0) {
+				return false
 			}
 		}
+	}
 
-		if move.y != 0 {
-			checkPosition := nextPosition.start
-			if move.y > 0 {
-				checkPosition = nextPosition.end
-			}
-			if g.isBox(checkPosition) {
-				adjacentBox := g.getBox(checkPosition)
-				if !g.moveBox(adjacentBox, move, 0) {
-					return false
-				}
+	// check for up and down cell
+	if move.y != 0 {
+		checkPosition := nextPosition.start
+		if move.y > 0 {
+			checkPosition = nextPosition.end
+		}
+		if g.isBox(checkPosition) {
+			adjacentBox := g.getBox(checkPosition)
+			if !g.moveBox(adjacentBox, move, 0) {
+				g.boxes = originalBoxes
+				return false
 			}
 		}
 	}
@@ -284,7 +285,6 @@ func (g *Game) moveBox(box Entity, direction Vector, depth int) bool {
 	}
 
 	if direction.x != 0 {
-		// check for backwards or forwards box
 		checkPosition := nextPosition.start
 		if direction.x > 0 {
 			checkPosition = nextPosition.end
@@ -298,17 +298,13 @@ func (g *Game) moveBox(box Entity, direction Vector, depth int) bool {
 	}
 
 	if direction.y != 0 {
-		// check up and down of the box
-		if g.isBox(nextPosition.start) {
-			adjacentBox := g.getBox(nextPosition.start)
-			if !g.moveBox(adjacentBox, direction, depth+1) {
-				return false
-			}
-		}
-		if g.isBox(nextPosition.end) {
-			adjacentBox := g.getBox(nextPosition.end)
-			if !g.moveBox(adjacentBox, direction, depth+1) {
-				return false
+		checkPositions := []Vector{nextPosition.start, nextPosition.end}
+		for _, checkPosition := range checkPositions {
+			if g.isBox(checkPosition) {
+				adjacentBox := g.getBox(checkPosition)
+				if !g.moveBox(adjacentBox, direction, depth+1) {
+					return false
+				}
 			}
 		}
 	}
@@ -329,17 +325,6 @@ func part1(inputs Inputs) {
 		game.moveRobot(move)
 	}
 
-	// for m, move := range inputs.moves {
-	// 	game.render()
-	// 	if game.moveRobot(move) {
-	// 		fmt.Printf("Move: (%d,%d)\n", move.x, move.y)
-	// 	} else {
-	// 		fmt.Printf("Can't move: (%d,%d)\n", move.x, move.y)
-	// 	}
-	// 	fmt.Printf("Move: %d out of %d\n", m+1, len(inputs.moves))
-	// 	time.Sleep(50 * time.Millisecond)
-	// }
-
 	game.render()
 
 	sum := 0
@@ -355,10 +340,6 @@ func part2(inputs Inputs) {
 	game.setup(inputs.grid)
 	game.render()
 
-	// for _, move := range inputs.moves {
-	// 	game.moveRobot(move)
-	// }
-
 	for m, move := range inputs.moves {
 		var moveStr string
 		switch move {
@@ -371,8 +352,11 @@ func part2(inputs Inputs) {
 		case Vector{1, 0}:
 			moveStr = ">"
 		}
+
+		canMove := game.moveRobot(move)
 		game.render()
-		if game.moveRobot(move) {
+
+		if canMove {
 			fmt.Printf("Move: %s\n", moveStr)
 		} else {
 			fmt.Printf("Move: %s - Nope\n", moveStr)
@@ -380,8 +364,6 @@ func part2(inputs Inputs) {
 		fmt.Printf("Move: %d out of %d\n", m+1, len(inputs.moves))
 		time.Sleep(50 * time.Millisecond)
 	}
-
-	game.render()
 
 	sum := 0
 	for box := range game.boxes {
@@ -402,10 +384,11 @@ func main() {
 	}
 
 	formattedData := formatData(data)
-	// part1(formattedData)
+	part1(formattedData)
 	part2(formattedData)
 }
 
+// interactive mode
 func main2() {
 	data, err := readData()
 	if err != nil {
@@ -414,33 +397,24 @@ func main2() {
 	}
 	formattedData := formatData(data)
 
-	fmt.Println("Choose mode:")
-	fmt.Println("1. Auto run (using data.txt)")
-	fmt.Println("2. Creator mode (WASD to move, Q to quit)")
+	fmt.Println("Interactive mode:")
 
-	var choice string
-	fmt.Scanln(&choice)
+	game := Game{isScaled: true}
+	game.setup(formattedData.grid)
 
-	if choice == "1" {
-		part1(formattedData)
-		part2(formattedData)
-	} else if choice == "2" {
-		game := Game{isScaled: true}
-		game.setup(formattedData.grid)
+	fmt.Print("\033[H\033[2J")
+	fmt.Println("Use WASD to move, R to reset and Q to quit")
 
+	for {
+		game.render()
+		move := game.getPlayerMove()
+		game.playerMoves = append(game.playerMoves, move)
+		game.moveRobot(move)
 		fmt.Print("\033[H\033[2J")
-		fmt.Println("Use WASD to move, Q to quit")
-
-		for {
-			game.render()
-			move := getPlayerMove()
-			game.moveRobot(move)
-			fmt.Print("\033[H\033[2J")
-		}
 	}
 }
 
-func getPlayerMove() Vector {
+func (game *Game) getPlayerMove() Vector {
 	if err := keyboard.Open(); err != nil {
 		panic(err)
 	}
@@ -463,7 +437,16 @@ func getPlayerMove() Vector {
 	case 'q', 'Q':
 		os.Exit(1)
 		return Vector{0, 0}
+	case 'r', 'R':
+		game.reload()
+		return Vector{0, 0}
 	default:
 		return Vector{0, 0}
 	}
+}
+
+func (game *Game) reload() {
+	data, _ := readData()
+	formattedData := formatData(data)
+	game.setup(formattedData.grid)
 }
