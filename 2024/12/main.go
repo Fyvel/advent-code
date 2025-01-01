@@ -29,21 +29,24 @@ type Area struct {
 	region    string
 	size      int
 	perimeter int
-	sides     int
+	corners   int
 }
 
-func exploreRegion(grid [][]string, region string, start []int, visited map[string]bool) Area {
+func exploreRegion(grid [][]string, region string, start [2]int, visited map[string]bool) Area {
 	directions := [][]int{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}
 
-	queue := [][]int{start}
+	queue := [][2]int{start}
 
-	visited[fmt.Sprintf("%d,%d", start[0], start[1])] = true
+	visited[fmt.Sprintf("%d_%d", start[0], start[1])] = true
 
 	area := Area{
 		region:    region,
 		size:      1,
 		perimeter: 0,
+		corners:   0,
 	}
+
+	areaCorners := make(map[[2]int]int)
 
 	for len(queue) > 0 {
 		cell := queue[0]
@@ -52,35 +55,26 @@ func exploreRegion(grid [][]string, region string, start []int, visited map[stri
 		for _, direction := range directions {
 			row := cell[0] + direction[0]
 			col := cell[1] + direction[1]
+			areaCorners[cell] = countCellCorners(grid, cell)
 
 			// within bounds
-			if row < 0 || row >= len(grid) || col < 0 || col >= len(grid[start[0]]) {
+			if row < 0 || row >= len(grid) || col < 0 || col >= len(grid[0]) || grid[row][col] != region {
 				area.perimeter++
-				if direction[0] != lastDirection[0] || direction[1] != lastDirection[1] {
-					area.sides++
-					lastDirection = direction
-				}
-				continue
-			}
-			if grid[row][col] != region {
-				area.perimeter++
-				if direction[0] != lastDirection[0] || direction[1] != lastDirection[1] {
-					area.sides++
-					lastDirection = direction
-				}
 				continue
 			}
 
-			key := fmt.Sprintf("%d,%d", row, col)
-			area.size++
+			key := fmt.Sprintf("%d_%d", row, col)
 
 			if !visited[key] && grid[row][col] == region {
-				queue = append(queue, []int{row, col})
+				queue = append(queue, [2]int{row, col})
 				visited[key] = true
 				area.size++
-				continue
 			}
 		}
+	}
+
+	for _, corners := range areaCorners {
+		area.corners += corners
 	}
 
 	return area
@@ -99,7 +93,7 @@ func part1(grid [][]string) int {
 			}
 
 			region := grid[r][c]
-			area := exploreRegion(grid, region, []int{r, c}, visited)
+			area := exploreRegion(grid, region, [2]int{r, c}, visited)
 
 			areas = append(areas, area)
 		}
@@ -114,27 +108,59 @@ func part1(grid [][]string) int {
 	return sum
 }
 
-func getRegion(grid [][]string, cell []int) string {
-	if cell[0] < 0 || cell[0] >= len(grid) || cell[1] < 0 || cell[1] >= len(grid[cell[0]]) {
-		return ""
-	}
-	return grid[cell[1]][cell[0]]
-}
-
-func countCorners(grid [][]string, cell []int, directions [][]int, dirIndex int, region string) int {
+func countCellCorners(grid [][]string, tile [2]int) int {
 	corners := 0
+	region := grid[tile[0]][tile[1]]
 
-	// TODO: fix this!
-	for d := dirIndex; d < 4; d++ {
-		// get current & next directions
-		dx1, dy1 := directions[d][0], directions[d][1]
-		dx2, dy2 := directions[(d+1)%4][0], directions[(d+1)%4][1]
+	// W WN N NE E ES S SW
+	directions := [][]int{{0, -1}, {-1, -1}, {-1, 0}, {-1, 1}, {0, 1}, {1, 1}, {1, 0}, {1, -1}}
 
-		left := getRegion(grid, []int{cell[1] + dy1, cell[0] + dx1})
-		right := getRegion(grid, []int{cell[1] + dy2, cell[0] + dx2})
-		mid := getRegion(grid, []int{cell[1] + dy1 + dy2, cell[0] + dx1 + dx2})
+	neighbors := make([]string, 8)
+	for i, direction := range directions {
+		row := tile[0] + direction[0]
+		col := tile[1] + direction[1]
 
-		if (left != region && right != region) || (left == region && right == region && mid != region) {
+		if row < 0 || row >= len(grid) || col < 0 || col >= len(grid[0]) {
+			neighbors[i] = ""
+			continue
+		}
+
+		neighbors[i] = grid[row][col]
+	}
+
+	angleAndAdjacent := [4]map[string]string{}
+
+	angleAndAdjacent[0] = map[string]string{
+		"adjacentLeft":  neighbors[0],
+		"angle":         neighbors[1],
+		"adjacentRight": neighbors[2],
+	}
+	angleAndAdjacent[1] = map[string]string{
+		"adjacentLeft":  neighbors[2],
+		"angle":         neighbors[3],
+		"adjacentRight": neighbors[4],
+	}
+	angleAndAdjacent[2] = map[string]string{
+		"adjacentLeft":  neighbors[4],
+		"angle":         neighbors[5],
+		"adjacentRight": neighbors[6],
+	}
+	angleAndAdjacent[3] = map[string]string{
+		"adjacentLeft":  neighbors[6],
+		"angle":         neighbors[7],
+		"adjacentRight": neighbors[0],
+	}
+
+	for _, angle := range angleAndAdjacent {
+		// fmt.Println(tile, idx, angle)
+
+		// outer corners (corner and adjacent are different regions)
+		if angle["angle"] != region && angle["adjacentLeft"] != region && angle["adjacentRight"] != region {
+			corners++
+		}
+
+		// inner corners (corner is same region and adjacent are different region)
+		if (angle["angle"] == region && angle["adjacentLeft"] != region && angle["adjacentRight"] != region) || (angle["angle"] != region && angle["adjacentLeft"] == region && angle["adjacentRight"] == region) {
 			corners++
 		}
 	}
@@ -142,94 +168,28 @@ func countCorners(grid [][]string, cell []int, directions [][]int, dirIndex int,
 	return corners
 }
 
-func exploreRegion2(grid [][]string, region string, start []int, visited map[string]bool) Area {
-	directions := [][]int{{0, 1}, {1, 0}, {0, -1}, {-1, 0}}
-
-	queue := [][]int{start}
-
-	visited[fmt.Sprintf("%d_%d", start[0], start[1])] = true
-
-	area := Area{
-		region:    region,
-		size:      1,
-		perimeter: 0,
-		sides:     0,
-	}
-
-	lastEdgeDirIndex := -1
-
-	for len(queue) > 0 {
-		cell := queue[0]
-		queue = queue[1:]
-		edges := map[string]map[int]bool{}
-
-		for dirIndex, direction := range directions {
-			row := cell[0] + direction[0]
-			col := cell[1] + direction[1]
-			nextCellKey := fmt.Sprintf("%d_%d", row, col)
-
-			// within bounds
-			if row < 0 || row >= len(grid) || col < 0 || col >= len(grid[start[0]]) {
-				area.perimeter++
-				edges[nextCellKey] = map[int]bool{dirIndex: true}
-				if lastEdgeDirIndex != dirIndex {
-					area.sides += countCorners(grid, cell, directions, dirIndex, region)
-					lastEdgeDirIndex = dirIndex
-				}
-				continue
-			}
-			if grid[row][col] != region {
-				area.perimeter++
-				edges[nextCellKey] = map[int]bool{dirIndex: true, direction[1]: true}
-				if lastEdgeDirIndex != dirIndex {
-					area.sides += countCorners(grid, cell, directions, dirIndex, region)
-					lastEdgeDirIndex = dirIndex
-				}
-				continue
-			}
-
-			key := fmt.Sprintf("%d_%d", row, col)
-
-			if !visited[key] && grid[row][col] == region {
-				queue = append(queue, []int{row, col})
-				visited[key] = true
-				area.size++
-				continue
-			}
-		}
-	}
-
-	return area
-}
-
 func part2(grid [][]string) int {
 	visited := make(map[string]bool)
 	var areas []Area
 
-	// traverse grid
 	for r := range grid {
 		for c := range grid[r] {
 			key := fmt.Sprintf("%d_%d", r, c)
-			cell := []int{r, c}
 			if visited[key] {
 				continue
 			}
 
 			region := grid[r][c]
-			area := exploreRegion2(grid, region, cell, visited)
+			area := exploreRegion(grid, region, [2]int{r, c}, visited)
 			areas = append(areas, area)
 		}
 	}
 
 	sumSides := 0
-	sum := 0
 	for _, area := range areas {
-		sumSides += area.size * area.sides
-		sum += area.size * area.perimeter
+		sumSides += area.size * area.corners
 	}
 
-	fmt.Println(areas)
-	fmt.Println(sum)
 	fmt.Println(sumSides)
 	return sumSides
 }
@@ -237,7 +197,7 @@ func part2(grid [][]string) int {
 func main() {
 	data, err := readData()
 	if err != nil {
-		fmt.Println("Get rekt:", err)
+		fmt.Println("Error:", err)
 		return
 	}
 
