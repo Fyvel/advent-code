@@ -62,11 +62,34 @@ func part1(data [][]int) {
 		}
 	}
 
-	fmt.Println("Invalid IDs:", invalidIds)
+	// fmt.Println("Invalid IDs:", invalidIds)
 	fmt.Println("Sum:", sum)
 }
 
-// func part2() {}
+func part2(data [][]int) {
+	invalidIds := [][]int{}
+	sum := 0
+
+	for i, interval := range data {
+		invalidIds = append(invalidIds, []int{})
+		for _, id := range interval {
+			if hasRepeatedSequence(strconv.Itoa(id)) {
+				invalidIds[i] = append(invalidIds[i], id)
+				sum += id
+			}
+		}
+	}
+
+	// fmt.Println("Invalid IDs:", invalidIds)
+	fmt.Println("Sum:", sum)
+}
+
+func hasRepeatedSequence(id string) bool {
+	idTwice := id + id
+	trimmed := idTwice[1 : len(idTwice)-1]
+	hasId := strings.Contains(trimmed, id)
+	return hasId
+}
 
 func main() {
 	data, err := readData()
@@ -77,5 +100,5 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }
