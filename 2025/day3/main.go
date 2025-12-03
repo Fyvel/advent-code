@@ -56,7 +56,42 @@ func part1(banks []string) {
 	fmt.Println("Sum of max values:", sum)
 }
 
-// func part2() {}
+func part2(banks []string) {
+	sum := 0
+	length := 12
+
+	for _, bank := range banks {
+		if len(bank) < length {
+			continue
+		}
+
+		joltage := ""
+		startIdx := 0
+
+		for idx := range length {
+			remaining := length - idx - 1
+			endIdx := len(bank) - remaining
+
+			maxDigit := '0'
+			maxDigitIdx := startIdx
+
+			for i := startIdx; i < endIdx; i++ {
+				if bank[i] > byte(maxDigit) {
+					maxDigit = rune(bank[i])
+					maxDigitIdx = i
+				}
+			}
+
+			startIdx = maxDigitIdx + 1
+			joltage += string(maxDigit)
+		}
+
+		// fmt.Println("Le joltage:", joltage)
+		joltageNum, _ := strconv.Atoi(joltage)
+		sum += joltageNum
+	}
+	fmt.Println("Sum of max values:", sum)
+}
 
 func main() {
 	data, err := readData()
@@ -67,5 +102,5 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }
