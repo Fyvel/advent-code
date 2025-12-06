@@ -21,7 +21,7 @@ func formatData(rows []string) []string {
 }
 
 func part1(data []string) {
-	operators := strings.Fields(data[len(data)-1:][0])
+	operators := strings.Fields(data[len(data)-1])
 	numbersRows := data[:len(data)-1]
 
 	operatorsMap := make(map[int]string)
@@ -58,7 +58,54 @@ func part1(data []string) {
 }
 
 func part2(data []string) {
-	// fmt.Println("Part 2:", data)
+	operators := strings.Fields(data[len(data)-1])
+	rows := data[:len(data)-1]
+
+	exams := make([]int, len(operators))
+	for i, op := range operators {
+		if op == "*" {
+			exams[i] = 1
+		}
+	}
+
+	examDigits := make([]int, len(rows[0]))
+	multipliers := make([]int, len(rows[0]))
+	for i := range multipliers {
+		multipliers[i] = 1
+	}
+
+	for rowIdx := len(rows) - 1; rowIdx >= 0; rowIdx-- {
+		row := rows[rowIdx]
+		for col := 0; col < len(row); col++ {
+			if row[col] >= '0' && row[col] <= '9' {
+				digit := int(row[col] - '0')
+				examDigits[col] += digit * multipliers[col]
+				multipliers[col] *= 10
+			}
+		}
+	}
+
+	opIdx := len(operators) - 1
+	for col := len(examDigits) - 1; col >= 0; col-- {
+		// check for next exam
+		if multipliers[col] == 1 {
+			opIdx--
+			continue
+		}
+
+		switch operators[opIdx] {
+		case "*":
+			exams[opIdx] *= examDigits[col]
+		case "+":
+			exams[opIdx] += examDigits[col]
+		}
+	}
+
+	sum := 0
+	for _, val := range exams {
+		sum += val
+	}
+	fmt.Println("Solution 2:", sum)
 }
 
 func main() {
