@@ -25,11 +25,17 @@ func readData() ([]string, error) {
 	return strings.Split(string(data), "\n"), nil
 }
 
-func formatData(rows []string) {}
+func formatData(rows []string) []string {
+	return rows
+}
 
-func part1() {}
+func part1(data []string) {
+	fmt.Println("Part 1:", data)
+}
 
-// func part2() {}
+func part2(data []string) {
+	fmt.Println("Part 2:", data)
+}
 
 func main() {
 	data, err := readData()
@@ -40,6 +46,6 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }
 ```
