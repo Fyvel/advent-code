@@ -1,11 +1,11 @@
 package main
 
 import (
+	"aoc2025/utils"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 func readData() ([]string, error) {
@@ -33,7 +33,7 @@ func part1(data [][]string) {
 	for row := range manifoldDiagram {
 		for col := beamRange[0]; col <= beamRange[1]; col++ {
 			isBeam := false
-			// renderGrid(manifoldDiagram, row, col, nil)
+			// utils.RenderGrid(manifoldDiagram, row, col, nil, cellRenderer)
 
 			if manifoldDiagram[row][col] == "S" {
 				beamRange = [2]int{col, col}
@@ -75,8 +75,8 @@ func part1(data [][]string) {
 		}
 	}
 
-	fmt.Print(ClearScreen + MoveCursor)
-	// renderGrid(manifoldDiagram, -1, -1, nil)
+	fmt.Print(utils.ClearScreen + utils.MoveCursor)
+	utils.RenderGrid(manifoldDiagram, -1, -1, nil, nil)
 	fmt.Println("\nPart 1: Processing complete", count)
 }
 
@@ -95,15 +95,15 @@ func part2(data [][]string) {
 	frameCounter := 0
 	render := func(grid [][]string, row, col int, activePath map[string]bool) {
 		if frameCounter%2 == 0 {
-			renderGrid(grid, row, col, activePath)
+			utils.RenderGrid(grid, row, col, activePath, cellRenderer)
 		}
 		frameCounter++
 	}
 
 	totalPaths := dfsCountPath(manifoldDiagram, startRow+1, startCol, make(map[string]int), make(map[string]bool), make(map[string]bool), render)
 
-	fmt.Print(ClearScreen + MoveCursor)
-	renderGrid(manifoldDiagram, -1, -1, nil)
+	fmt.Print(utils.ClearScreen + utils.MoveCursor)
+	utils.RenderGrid(manifoldDiagram, -1, -1, nil, cellRenderer)
 	fmt.Println("\nPart 2:", totalPaths)
 }
 
@@ -165,63 +165,35 @@ func main() {
 	part2(formatData(data))
 }
 
-const (
-	Reset        = "\033[0m"
-	White        = "\033[97m"
-	Black        = "\033[30m"
-	Orange       = "\033[38;5;208m"
-	Cyan         = "\033[96m"
-	BgOrange     = "\033[48;5;208m"
-	BgCyan       = "\033[48;5;51m"
-	ClearScreen  = "\033[2J"
-	MoveCursor   = "\033[H"
-	AltScreenOn  = "\033[?1049h"
-	AltScreenOff = "\033[?1049l"
-	HideCursor   = "\033[?25l"
-	ShowCursor   = "\033[?25h"
-)
-
-func renderGrid(grid [][]string, activeRow, activeCol int, activePath map[string]bool) {
+func cellRenderer(ctx utils.CellRenderContext) string {
 	var buf strings.Builder
-	buf.WriteString(HideCursor)
-	buf.WriteString(MoveCursor)
 
-	for rowIdx, row := range grid {
-		for colIdx, cell := range row {
-			isActive := rowIdx == activeRow && colIdx == activeCol
-			key := fmt.Sprintf("%d_%d", rowIdx, colIdx)
-			isInActivePath := activePath != nil && activePath[key]
-
-			if isActive {
-				buf.WriteString(BgOrange + Black)
-			} else if isInActivePath {
-				buf.WriteString(Orange)
-			}
-
-			switch cell {
-			case "S", "^":
-				buf.WriteString(White + cell + Reset)
-			case ".":
-				buf.WriteString(Black + cell + Reset)
-			case "⏐": // this is the weird one
-				if isInActivePath || isActive {
-					buf.WriteString(BgOrange + Orange + cell + Reset)
-				} else {
-					buf.WriteString(BgCyan + Cyan + cell + Reset)
-				}
-			case "|":
-				buf.WriteString(BgCyan + Cyan + cell + Reset)
-			default:
-				buf.WriteString(cell)
-			}
-
-			if isActive || isInActivePath {
-				buf.WriteString(Reset)
-			}
-		}
-		buf.WriteString("\n")
+	if ctx.IsActive {
+		buf.WriteString(utils.BgOrange + utils.Black)
+	} else if ctx.IsInActivePath {
+		buf.WriteString(utils.Orange)
 	}
 
-	fmt.Print(buf.String())
-	time.Sleep(5 * time.Millisecond)
+	switch ctx.Cell {
+	case "S", "^":
+		buf.WriteString(utils.White + ctx.Cell + utils.Reset)
+	case ".":
+		buf.WriteString(utils.Black + ctx.Cell + utils.Reset)
+	case "⏐": // this is the weird one
+		if ctx.IsInActivePath || ctx.IsActive {
+			buf.WriteString(utils.BgOrange + utils.Orange + ctx.Cell + utils.Reset)
+		} else {
+			buf.WriteString(utils.BgCyan + utils.Cyan + ctx.Cell + utils.Reset)
+		}
+	case "|":
+		buf.WriteString(utils.BgCyan + utils.Cyan + ctx.Cell + utils.Reset)
+	default:
+		buf.WriteString(ctx.Cell)
+	}
+
+	if ctx.IsActive || ctx.IsInActivePath {
+		buf.WriteString(utils.Reset)
+	}
+
+	return buf.String()
 }
