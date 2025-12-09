@@ -12,6 +12,7 @@ const (
 	Black        = "\033[30m"
 	Orange       = "\033[38;5;208m"
 	Cyan         = "\033[96m"
+	BgBlack      = "\033[40m"
 	BgOrange     = "\033[48;5;208m"
 	BgCyan       = "\033[48;5;51m"
 	ClearScreen  = "\033[2J"
@@ -33,6 +34,7 @@ type CellRenderer func(ctx CellRenderContext) string
 func RenderGrid(grid [][]string, activeRow, activeCol int, activePath map[string]bool, cellRenderer CellRenderer) {
 	var buf strings.Builder
 	buf.WriteString(HideCursor)
+	buf.WriteString(ClearScreen)
 	buf.WriteString(MoveCursor)
 
 	for rowIdx, row := range grid {
