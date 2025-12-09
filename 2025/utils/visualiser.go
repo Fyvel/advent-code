@@ -15,6 +15,7 @@ const (
 	BgBlack      = "\033[40m"
 	BgOrange     = "\033[48;5;208m"
 	BgCyan       = "\033[48;5;51m"
+	BgRed        = "\033[41m"
 	ClearScreen  = "\033[2J"
 	MoveCursor   = "\033[H"
 	AltScreenOn  = "\033[?1049h"
