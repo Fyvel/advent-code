@@ -96,26 +96,10 @@ func (c *Circuits) Connect(u, v int) {
 	c.counts[circuitU] += c.counts[circuitV]
 }
 
-func part1(junctionBoxes []Vector) {
+func part1(junctionBoxes JunctionBoxes) {
 
-	var pairs []Pair
-	for r := 0; r < len(junctionBoxes)-1; r++ {
-		for c := r + 1; c < len(junctionBoxes); c++ {
-			distSq := junctionBoxes[r].DistanceSq(junctionBoxes[c])
-			pairs = append(pairs, Pair{
-				U:        junctionBoxes[r],
-				V:        junctionBoxes[c],
-				Distance: math.Sqrt(distSq),
-			})
-		}
-	}
-
-	sort.Slice(pairs, func(a, b int) bool { return pairs[a].Distance < pairs[b].Distance })
-
-	jbIdxMap := make(map[Vector]int)
-	for i, jb := range junctionBoxes {
-		jbIdxMap[jb] = i
-	}
+	pairs := junctionBoxes.buildPairs()
+	jbIdxMap := junctionBoxes.buildIndexMap()
 
 	connectionCount := 1000
 	manager := NewCircuitsManager(len(junctionBoxes))
@@ -147,12 +131,13 @@ func part1(junctionBoxes []Vector) {
 		return len(circuits[a]) > len(circuits[b])
 	})
 
-	renderCircuits(circuits)
+	top3 := 3
+	renderCircuits(circuits, top3)
 
 	var buf strings.Builder
 	buf.WriteString(fmt.Sprintf("%d circuits found\n", len(circuits)))
 
-	for i := 0; i < 3 && i < len(circuits); i++ {
+	for i := 0; i < top3 && i < len(circuits); i++ {
 		multiplyTop3 *= len(circuits[i])
 		buf.WriteString(fmt.Sprintf("Circuit #%d -> %d junction boxes\n", i+1, len(circuits[i])))
 	}
@@ -161,7 +146,34 @@ func part1(junctionBoxes []Vector) {
 	fmt.Print(buf.String())
 }
 
-func renderCircuits(circuits [][]Vector) {
+type JunctionBoxes []Vector
+
+func (junctionBoxes JunctionBoxes) buildPairs() []Pair {
+	var pairs []Pair
+	for r := 0; r < len(junctionBoxes)-1; r++ {
+		for c := r + 1; c < len(junctionBoxes); c++ {
+			distSq := junctionBoxes[r].DistanceSq(junctionBoxes[c])
+			pairs = append(pairs, Pair{
+				U:        junctionBoxes[r],
+				V:        junctionBoxes[c],
+				Distance: math.Sqrt(distSq),
+			})
+		}
+	}
+
+	sort.Slice(pairs, func(a, b int) bool { return pairs[a].Distance < pairs[b].Distance })
+	return pairs
+}
+
+func (junctionBoxes JunctionBoxes) buildIndexMap() map[Vector]int {
+	jbIdxMap := make(map[Vector]int)
+	for i, jb := range junctionBoxes {
+		jbIdxMap[jb] = i
+	}
+	return jbIdxMap
+}
+
+func renderCircuits(circuits [][]Vector, depth int) {
 	cellRenderer := func(ctx utils.CellRenderContext) string {
 		if ctx.Cell == "#" {
 			return utils.BgOrange + utils.White + ctx.Cell + utils.Reset
@@ -172,7 +184,8 @@ func renderCircuits(circuits [][]Vector) {
 		return ctx.Cell
 	}
 
-	for _, circuit := range circuits {
+	for i := range depth {
+		circuit := circuits[i]
 		gridSize := 42
 		grid := make([][]string, gridSize)
 		for r := range grid {
@@ -192,7 +205,43 @@ func renderCircuits(circuits [][]Vector) {
 	}
 }
 
-func part2(junctionBoxes []Vector) {
+func part2(junctionBoxes JunctionBoxes) {
+
+	pairs := junctionBoxes.buildPairs()
+	jbIdxMap := junctionBoxes.buildIndexMap()
+
+	manager := NewCircuitsManager(len(junctionBoxes))
+
+	multiplyLastConnectionX := 1
+	for _, pair := range pairs {
+		u := jbIdxMap[pair.U]
+		v := jbIdxMap[pair.V]
+
+		manager.Connect(u, v)
+
+		if manager.counts[manager.Search(u)] == len(junctionBoxes) {
+			multiplyLastConnectionX = int(pair.U.X) * int(pair.V.X)
+			break
+		}
+	}
+
+	circuitsMap := make(map[int][]Vector)
+
+	for i := range junctionBoxes {
+		cId := manager.Search(i)
+		circuitsMap[cId] = append(circuitsMap[cId], junctionBoxes[i])
+	}
+
+	var maxCircuitPath []Vector
+	for _, circuit := range circuitsMap {
+		if len(circuit) > len(maxCircuitPath) {
+			maxCircuitPath = circuit
+		}
+	}
+
+	renderCircuits([][]Vector{maxCircuitPath}, 1)
+
+	fmt.Printf("Part 2: %d\n", multiplyLastConnectionX)
 }
 
 func main() {
@@ -206,6 +255,8 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
+
+	time.Sleep(500 * time.Millisecond)
 
 	fmt.Print(utils.ShowCursor)
 	part2(formattedData)

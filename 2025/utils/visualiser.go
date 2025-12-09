@@ -32,12 +32,15 @@ type CellRenderContext struct {
 type CellRenderer func(ctx CellRenderContext) string
 
 func RenderGrid(grid [][]string, activeRow, activeCol int, activePath map[string]bool, cellRenderer CellRenderer) {
-	var buf strings.Builder
-	buf.WriteString(HideCursor)
-	buf.WriteString(ClearScreen)
-	buf.WriteString(MoveCursor)
+	if cellRenderer == nil {
+		cellRenderer = func(ctx CellRenderContext) string {
+			return ctx.Cell
+		}
+	}
 
+	newLines := make([]string, len(grid))
 	for rowIdx, row := range grid {
+		var sb strings.Builder
 		for colIdx, cell := range row {
 			isActive := rowIdx == activeRow && colIdx == activeCol
 			key := fmt.Sprintf("%d_%d", rowIdx, colIdx)
@@ -48,17 +51,41 @@ func RenderGrid(grid [][]string, activeRow, activeCol int, activePath map[string
 				IsActive:       isActive,
 				IsInActivePath: isInActivePath,
 			}
-
-			if cellRenderer == nil {
-				cellRenderer = func(ctx CellRenderContext) string {
-					return ctx.Cell
-				}
-			}
-			buf.WriteString(cellRenderer(ctx))
+			sb.WriteString(cellRenderer(ctx))
 		}
-		buf.WriteString("\n")
+		newLines[rowIdx] = sb.String()
 	}
 
-	fmt.Print(buf.String())
+	if prevLines == nil || len(prevLines) != len(newLines) {
+		var buf strings.Builder
+		buf.WriteString(ClearScreen)
+		buf.WriteString(MoveCursor)
+		for _, line := range newLines {
+			buf.WriteString(line)
+			buf.WriteString("\n")
+		}
+		fmt.Print(buf.String())
+	} else {
+		for i, line := range newLines {
+			if prevLines[i] != line {
+				fmt.Printf("\033[%d;1H\033[K%s", i+1, line)
+			}
+		}
+		fmt.Printf("\033[%d;1H", len(newLines)+1)
+	}
+
+	prevLines = newLines
 	time.Sleep(5 * time.Millisecond)
+}
+
+var prevLines []string
+
+func EnterVisualMode() {
+	fmt.Print(AltScreenOn)
+	fmt.Print(HideCursor)
+}
+
+func ExitVisualMode() {
+	fmt.Print(ShowCursor)
+	fmt.Print(AltScreenOff)
 }
