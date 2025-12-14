@@ -6,20 +6,18 @@ import (
 )
 
 type Machine struct {
-	Lights     string
-	Buttons    [][]int
-	JoltageMap map[int]bool
-	IsOn       bool
+	Lights  string
+	Buttons [][]int
+	Joltage []int
 }
 
 func NewMachine(data string) Machine {
 	parts := strings.Split(data, " ")
 
 	machine := &Machine{
-		Lights:     strings.Trim(parts[0], "[]"),
-		Buttons:    [][]int{},
-		JoltageMap: make(map[int]bool),
-		IsOn:       strings.Count(parts[0], "#") == 0,
+		Lights:  strings.Trim(parts[0], "[]"),
+		Buttons: [][]int{},
+		Joltage: []int{},
 	}
 
 	for _, part := range parts[1:] {
@@ -37,15 +35,24 @@ func NewMachine(data string) Machine {
 			joltStr := strings.Trim(part, "{}")
 			for _, j := range strings.Split(joltStr, ",") {
 				fmt.Sscanf(j, "%d", &jolt)
-				machine.JoltageMap[jolt] = true
+				machine.Joltage = append(machine.Joltage, jolt)
 			}
 		}
 	}
 	return *machine
 }
 
-func (m *Machine) isLightOn() bool {
+func (m *Machine) IsOn() bool {
 	return strings.Count(m.Lights, "#") == 0
+}
+
+func (m *Machine) IsPowered() bool {
+	for _, j := range m.Joltage {
+		if j != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *Machine) Toggle(buttonIndex int) {
@@ -53,6 +60,8 @@ func (m *Machine) Toggle(buttonIndex int) {
 		return
 	}
 	button := m.Buttons[buttonIndex]
+
+	// Toggle lights
 	runes := []rune(m.Lights)
 	for _, idx := range button {
 		if idx < 0 || idx >= len(runes) {
@@ -65,5 +74,12 @@ func (m *Machine) Toggle(buttonIndex int) {
 		}
 	}
 	m.Lights = string(runes)
-	m.IsOn = m.isLightOn()
+}
+
+func (m *Machine) ToggleMask(joltageMultiplier []int) {
+	for i := range m.Joltage {
+		if i < len(joltageMultiplier) {
+			m.Joltage[i] = (m.Joltage[i] - joltageMultiplier[i]) / 2
+		}
+	}
 }

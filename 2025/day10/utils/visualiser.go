@@ -25,8 +25,9 @@ type Visualiser struct {
 	delay        time.Duration
 	disabled     bool
 	mu           sync.Mutex
-	lineMap      map[int]int // maps lights index to terminal line
+	lineMap      map[int]int // map terminal lines
 	totalLines   int
+	maxWidth     int // RTL padding
 }
 
 func NewVisualiser(delay time.Duration, disabled bool) *Visualiser {
@@ -37,6 +38,7 @@ func NewVisualiser(delay time.Duration, disabled bool) *Visualiser {
 		disabled:     disabled,
 		lineMap:      make(map[int]int),
 		totalLines:   0,
+		maxWidth:     0,
 	}
 }
 
@@ -45,6 +47,19 @@ func renderLight(lights string, isOn bool) string {
 		return fmt.Sprintf("%s 🟡 %s[%s]%s", BgGreen, Black, lights, Reset)
 	}
 	return fmt.Sprintf("%s ⚫️ %s[%s]%s ", BgWhite, Black, lights, Reset)
+}
+
+func renderJoltage(joltage []int, isPowered bool) string {
+	parts := make([]string, len(joltage))
+	for i, val := range joltage {
+		parts[i] = fmt.Sprintf("%d", val)
+	}
+	joltageStr := fmt.Sprintf("{%s}", strings.Join(parts, ","))
+
+	if isPowered {
+		return fmt.Sprintf("%s%s 🟡%s", BgGreen, joltageStr, Reset)
+	}
+	return fmt.Sprintf("%s%s ⚫️%s", BgWhite, joltageStr, Reset)
 }
 
 func renderButtons(buttons [][]int, active int) string {
@@ -68,11 +83,72 @@ func renderButtons(buttons [][]int, active int) string {
 	return sb.String()
 }
 
+func renderButtonsJoltage(buttons [][]int, active int) string {
+	var sb strings.Builder
+	text := ""
+
+	for i, button := range buttons {
+		schema := make([]rune, len(buttons))
+		for j := range schema {
+			schema[j] = '0'
+		}
+		for _, idx := range button {
+			if idx >= 0 && idx < len(schema) {
+				schema[idx] = '1'
+			}
+		}
+
+		// coma separated values
+		part := ""
+		for j, val := range schema {
+			part += string(val)
+			if j < len(schema)-1 {
+				part += ","
+			}
+		}
+		if i == active {
+			text += fmt.Sprintf("%s(%s)%s ", BgOrange, part, Reset)
+		} else {
+			text += fmt.Sprintf("(%s) ", part)
+		}
+	}
+	sb.WriteString(text)
+
+	return sb.String()
+}
+
+func visibleWidth(s string) int {
+	width := 0
+	inEscape := false
+	for _, r := range s {
+		if r == '\033' {
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+			continue
+		}
+		width++
+	}
+	return width
+}
+
 func (v *Visualiser) RegisterMachine(machineIdx int) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	v.lineMap[machineIdx] = v.totalLines
 	v.totalLines++
+}
+
+func (v *Visualiser) updateMaxWidth(joltage []int) {
+	lsbStr := renderButtonsJoltage([][]int{joltage}, -1)
+	width := visibleWidth(lsbStr)
+	if width > v.maxWidth {
+		v.maxWidth = width
+	}
 }
 
 func (v *Visualiser) Render(light string, isOn bool, buttons [][]int, active int) {
@@ -129,6 +205,64 @@ func (v *Visualiser) Complete(machineIdx int, light string, buttons [][]int) {
 	v.mu.Lock()
 	v.moveTo(currentLine - line)
 	fmt.Printf("\r✓ %s %s\033[K", renderLight(light, true), renderButtons(buttons, -1))
+	v.moveDown(currentLine - line)
+	v.mu.Unlock()
+
+	time.Sleep(v.delay)
+}
+
+func (v *Visualiser) UpdateJoltage(machineIdx int, joltage []int, isPowered bool, buttons [][]int, active int) {
+	if v.disabled {
+		return
+	}
+
+	// Update max button width
+	v.mu.Lock()
+	v.updateMaxWidth(joltage)
+	v.mu.Unlock()
+
+	v.mu.Lock()
+	spinner := v.spinnerChars[v.spinnerIdx%len(v.spinnerChars)]
+	v.spinnerIdx++
+	line := v.lineMap[machineIdx]
+	currentLine := v.totalLines - 1
+	v.mu.Unlock()
+
+	lsbStr := renderButtonsJoltage(buttons, active)
+	lsbWidth := visibleWidth(lsbStr)
+	padding := v.maxWidth - lsbWidth
+	if padding < 0 {
+		padding = 0
+	}
+
+	v.mu.Lock()
+	v.moveTo(currentLine - line)
+	fmt.Printf("\r%s %s%s %s\033[K", spinner, lsbStr, strings.Repeat(" ", padding), renderJoltage(joltage, isPowered))
+	v.moveDown(currentLine - line)
+	v.mu.Unlock()
+
+	time.Sleep(v.delay)
+}
+
+func (v *Visualiser) CompleteJoltage(machineIdx int, joltage []int, buttons [][]int) {
+	if v.disabled {
+		return
+	}
+	v.mu.Lock()
+	line := v.lineMap[machineIdx]
+	currentLine := v.totalLines - 1
+	v.mu.Unlock()
+
+	lsbStr := renderButtonsJoltage(buttons, -1)
+	lsbWidth := visibleWidth(lsbStr)
+	padding := v.maxWidth - lsbWidth
+	if padding < 0 {
+		padding = 0
+	}
+
+	v.mu.Lock()
+	v.moveTo(currentLine - line)
+	fmt.Printf("\r✓ %s%s %s\033[K", lsbStr, strings.Repeat(" ", padding), renderJoltage(joltage, true))
 	v.moveDown(currentLine - line)
 	v.mu.Unlock()
 
