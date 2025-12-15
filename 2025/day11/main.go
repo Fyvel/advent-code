@@ -118,6 +118,89 @@ func traverseTreeDFS(node *TreeNode, currentPath []string, visited map[*TreeNode
 }
 
 func part2(data map[string][]string) {
+	root := &TreeNode{Value: "svr"}
+	nodes := map[string]*TreeNode{
+		"svr": root,
+	}
+
+	for parent, children := range data {
+		parentNode, exists := nodes[parent]
+		if !exists {
+			parentNode = &TreeNode{Value: parent}
+			nodes[parent] = parentNode
+		}
+		for _, child := range children {
+			childNode, exists := nodes[child]
+			if !exists {
+				childNode = &TreeNode{Value: child}
+				nodes[child] = childNode
+			}
+			parentNode.Children = append(parentNode.Children, childNode)
+		}
+	}
+
+	visited := make(map[*TreeNode]bool)
+
+	memo := make(map[MemoKey]int)
+	count := countPathsDFS(root, visited, false, false, memo)
+
+	fmt.Println("Part 2:", count)
+}
+
+type MemoKey struct {
+	node   *TreeNode
+	hasDac bool
+	hasFft bool
+}
+
+func countPathsDFS(node *TreeNode, visited map[*TreeNode]bool, hasDac bool, hasFft bool, memo map[MemoKey]int) int {
+	// base
+	if visited[node] {
+		return 0
+	}
+
+	key := MemoKey{
+		node:   node,
+		hasDac: hasDac,
+		hasFft: hasFft,
+	}
+
+	// check memo
+	if count, exists := memo[key]; exists {
+		return count
+	}
+
+	visited[node] = true
+	// cleanup
+	defer delete(visited, node)
+
+	switch node.Value {
+	case "dac":
+		hasDac = true
+	case "fft":
+		hasFft = true
+	case "out":
+		if hasDac && hasFft {
+			pathStr := []string{}
+			for n := range visited {
+				pathStr = append(pathStr, n.Value)
+			}
+			pathStr = append(pathStr, "out")
+			fmt.Println(strings.Join(pathStr, " -> "))
+			return 1
+		}
+		return 0
+	}
+
+	// recursion
+	count := 0
+	for _, child := range node.Children {
+		count += countPathsDFS(child, visited, hasDac, hasFft, memo)
+	}
+
+	// store
+	memo[key] = count
+	return count
 }
 
 func main() {
@@ -129,5 +212,5 @@ func main() {
 
 	formattedData := formatData(data)
 	part1(formattedData)
-	// part2(formattedData)
+	part2(formattedData)
 }
