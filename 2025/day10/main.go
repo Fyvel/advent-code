@@ -24,15 +24,14 @@ func formatData(rows []string) []string {
 }
 
 func part1(data []string, v *utils.Visualiser) {
-	if v == nil {
-		return
-	}
 
-	for idx := range data {
-		// map machine/line
-		v.RegisterMachine(idx)
-		// placeholders
-		fmt.Println()
+	if v != nil {
+		for idx := range data {
+			// map machine/line
+			v.RegisterMachine(idx)
+			// placeholders
+			fmt.Println()
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -42,7 +41,7 @@ func part1(data []string, v *utils.Visualiser) {
 
 	for idx, line := range data {
 		wg.Add(1)
-		go func(machineIdx int, line string) {
+		go func(machineIdx int, line string, v *utils.Visualiser) {
 			defer wg.Done()
 
 			pressCount, sequence := findBestSequenceBFS(line, v, machineIdx)
@@ -56,14 +55,16 @@ func part1(data []string, v *utils.Visualiser) {
 
 			// mark complete
 			m := machine.NewMachine(line)
-			v.Complete(machineIdx, m.Lights, m.Buttons)
-		}(idx, line)
+			if v != nil {
+				v.Complete(machineIdx, m.Lights, m.Buttons)
+			}
+		}(idx, line, v)
 	}
 
 	wg.Wait()
 
 	// RESULTS OUTPUT
-	showResults(results, totalCount, false)
+	// showResults(results, totalCount, false)
 	fmt.Println("Part 1:", totalCount)
 }
 
@@ -93,15 +94,13 @@ func interactivePart2(data []string, v *utils.Visualiser) {
 }
 
 func part2(data []string, v *utils.Visualiser) {
-	if v == nil {
-		return
-	}
-
-	for idx := range data {
-		// map machine/line
-		v.RegisterMachine(idx)
-		// placeholders
-		fmt.Println()
+	if v != nil {
+		for idx := range data {
+			// map machine/line
+			v.RegisterMachine(idx)
+			// placeholders
+			fmt.Println()
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -111,7 +110,7 @@ func part2(data []string, v *utils.Visualiser) {
 
 	for idx, line := range data {
 		wg.Add(1)
-		go func(machineIdx int, line string) {
+		go func(machineIdx int, line string, v *utils.Visualiser) {
 			defer wg.Done()
 			m := machine.NewMachine(line)
 
@@ -124,7 +123,9 @@ func part2(data []string, v *utils.Visualiser) {
 				mu.Lock()
 				results[line] = sequence
 				mu.Unlock()
-				v.CompleteJoltage(machineIdx, m.Joltage, m.Buttons)
+				if v != nil {
+					v.CompleteJoltage(machineIdx, m.Joltage, m.Buttons)
+				}
 				return
 			}
 
@@ -145,14 +146,16 @@ func part2(data []string, v *utils.Visualiser) {
 			mu.Unlock()
 
 			// mark complete
-			v.CompleteJoltage(machineIdx, m.Joltage, m.Buttons)
-		}(idx, line)
+			if v != nil {
+				v.CompleteJoltage(machineIdx, m.Joltage, m.Buttons)
+			}
+		}(idx, line, v)
 	}
 
 	wg.Wait()
 
 	// RESULTS OUTPUT
-	showResults(results, totalCount, true)
+	// showResults(results, totalCount, true)
 
 	fmt.Println("Part 2:", totalCount)
 }
@@ -195,6 +198,7 @@ func showResults(results map[string][]int, totalPresses int, isPart2 bool) {
 }
 
 func main() {
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
 	data, err := readData()
 	if err != nil {
 		fmt.Println("Get rekt:", err)
@@ -204,9 +208,12 @@ func main() {
 	formattedData := formatData(data)
 	renderer := utils.NewVisualiser(1*time.Millisecond, false)
 
-	interactivePart1(formattedData, renderer)
+	if !withVisual {
+		renderer = nil
+	}
+	// interactivePart1(formattedData, renderer)
 	part1(formattedData, renderer)
-	interactivePart2(formattedData, renderer)
+	// interactivePart2(formattedData, renderer)
 	part2(formattedData, renderer)
 }
 

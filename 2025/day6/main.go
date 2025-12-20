@@ -54,7 +54,7 @@ func part1(data []string) {
 	for _, val := range exams {
 		sum += val
 	}
-	fmt.Println("Solution:", sum)
+	fmt.Println("Part 1:", sum)
 }
 
 func part2(data []string) {
@@ -105,7 +105,7 @@ func part2(data []string) {
 	for _, val := range exams {
 		sum += val
 	}
-	fmt.Println("Solution 2:", sum)
+	fmt.Println("Part 2:", sum)
 }
 
 func main() {

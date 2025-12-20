@@ -24,7 +24,7 @@ func formatData(rows []string) [][]string {
 	return formatted
 }
 
-func part1(data [][]string) {
+func part1(data [][]string, withVisual bool) {
 	manifoldDiagram := data
 	count := 0
 
@@ -33,8 +33,9 @@ func part1(data [][]string) {
 	for row := range manifoldDiagram {
 		for col := beamRange[0]; col <= beamRange[1]; col++ {
 			isBeam := false
-			// utils.RenderGrid(manifoldDiagram, row, col, nil, cellRenderer)
-
+			if withVisual {
+				utils.RenderGrid(manifoldDiagram, row, col, nil, cellRenderer)
+			}
 			if manifoldDiagram[row][col] == "S" {
 				beamRange = [2]int{col, col}
 				break
@@ -75,12 +76,14 @@ func part1(data [][]string) {
 		}
 	}
 
-	fmt.Print(utils.ClearScreen + utils.MoveCursor)
-	utils.RenderGrid(manifoldDiagram, -1, -1, nil, nil)
-	fmt.Println("\nPart 1: Processing complete", count)
+	if withVisual {
+		fmt.Print(utils.ClearScreen + utils.MoveCursor)
+		utils.RenderGrid(manifoldDiagram, -1, -1, nil, cellRenderer)
+	}
+	fmt.Println("Part 1:", count)
 }
 
-func part2(data [][]string) {
+func part2(data [][]string, withVisual bool) {
 	manifoldDiagram := data
 
 	var startRow, startCol int
@@ -92,19 +95,26 @@ func part2(data [][]string) {
 		}
 	}
 
-	frameCounter := 0
-	render := func(grid [][]string, row, col int, activePath map[string]bool) {
-		if frameCounter%2 == 0 {
-			utils.RenderGrid(grid, row, col, activePath, cellRenderer)
+	var render func(grid [][]string, row int, col int, activePath map[string]bool)
+	if withVisual {
+		frameCounter := 0
+		render = func(grid [][]string, row, col int, activePath map[string]bool) {
+			if frameCounter%2 == 0 {
+				utils.RenderGrid(grid, row, col, activePath, cellRenderer)
+			}
+			frameCounter++
 		}
-		frameCounter++
+	} else {
+		render = nil
 	}
 
 	totalPaths := dfsCountPath(manifoldDiagram, startRow+1, startCol, make(map[string]int), make(map[string]bool), make(map[string]bool), render)
 
-	fmt.Print(utils.ClearScreen + utils.MoveCursor)
-	utils.RenderGrid(manifoldDiagram, -1, -1, nil, cellRenderer)
-	fmt.Println("\nPart 2:", totalPaths)
+	if withVisual {
+		fmt.Print(utils.ClearScreen + utils.MoveCursor)
+		utils.RenderGrid(manifoldDiagram, -1, -1, nil, cellRenderer)
+	}
+	fmt.Println("Part 2:", totalPaths)
 }
 
 type Render func(grid [][]string, row, col int, activePath map[string]bool)
@@ -160,9 +170,16 @@ func main() {
 		return
 	}
 
-	part1(formatData(data))
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
 
-	part2(formatData(data))
+	if withVisual {
+		utils.EnterVisualMode()
+		defer utils.ExitVisualMode()
+	}
+
+	part1(formatData(data), withVisual)
+
+	part2(formatData(data), withVisual)
 }
 
 func cellRenderer(ctx utils.CellRenderContext) string {

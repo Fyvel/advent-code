@@ -62,8 +62,7 @@ func part1(data [][]int) {
 		}
 	}
 
-	// fmt.Println("Invalid IDs:", invalidIds)
-	fmt.Println("Sum:", sum)
+	fmt.Println("Part 1:", sum)
 }
 
 func part2(data [][]int) {
@@ -80,8 +79,7 @@ func part2(data [][]int) {
 		}
 	}
 
-	// fmt.Println("Invalid IDs:", invalidIds)
-	fmt.Println("Sum:", sum)
+	fmt.Println("Part 2:", sum)
 }
 
 func hasRepeatedSequence(id string) bool {

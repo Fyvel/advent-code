@@ -56,7 +56,7 @@ func part1(banks []string) {
 		// fmt.Println("Highest number:", highestNumber)
 		sum += highestNumber
 	}
-	fmt.Println("Sum of max values:", sum)
+	fmt.Println("Part 1:", sum)
 }
 
 func part2(banks []string) {
@@ -71,7 +71,7 @@ func part2(banks []string) {
 		joltageNum, _ := processBank(bank, length, nil, 0)
 		sum += joltageNum
 	}
-	fmt.Println("Sum of max values:", sum)
+	fmt.Println("Part 2:", sum)
 }
 
 func processBank(bank string, length int, render *utils.Visualiser, bankIdx int) (int, map[int]bool) {
@@ -162,5 +162,9 @@ func main() {
 	formattedData := formatData(data)
 	part1(formattedData)
 	part2(formattedData)
-	part2visualAsync(formattedData)
+
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
+	if withVisual {
+		part2visualAsync(formattedData)
+	}
 }

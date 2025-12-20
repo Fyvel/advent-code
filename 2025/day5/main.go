@@ -45,7 +45,7 @@ func part1(intervals []string, ingredients []string) {
 		}
 	}
 
-	fmt.Println("Solution:", freshCount)
+	fmt.Println("Part 1:", freshCount)
 }
 
 type Interval struct{ Start, End int }
@@ -96,7 +96,7 @@ func part2(intervals []string) {
 		idCount += (interval.End - interval.Start + 1)
 	}
 
-	fmt.Println("Solution 2:", idCount)
+	fmt.Println("Part 2:", idCount)
 
 }
 

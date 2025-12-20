@@ -96,7 +96,7 @@ func (c *Circuits) Connect(u, v int) {
 	c.counts[circuitU] += c.counts[circuitV]
 }
 
-func part1(junctionBoxes JunctionBoxes) {
+func part1(junctionBoxes JunctionBoxes, withVisual bool) {
 
 	pairs := junctionBoxes.buildPairs()
 	jbIdxMap := junctionBoxes.buildIndexMap()
@@ -131,19 +131,24 @@ func part1(junctionBoxes JunctionBoxes) {
 		return len(circuits[a]) > len(circuits[b])
 	})
 
-	top3 := 3
-	renderCircuits(circuits, top3)
+	if withVisual {
+		top3 := 3
+		renderCircuits(circuits, top3)
 
-	var buf strings.Builder
-	buf.WriteString(fmt.Sprintf("%d circuits found\n", len(circuits)))
+		var buf strings.Builder
+		buf.WriteString(fmt.Sprintf("%d circuits found\n", len(circuits)))
 
-	for i := 0; i < top3 && i < len(circuits); i++ {
-		multiplyTop3 *= len(circuits[i])
-		buf.WriteString(fmt.Sprintf("Circuit #%d -> %d junction boxes\n", i+1, len(circuits[i])))
+		for i := 0; i < top3 && i < len(circuits); i++ {
+			multiplyTop3 *= len(circuits[i])
+			buf.WriteString(fmt.Sprintf("Circuit #%d -> %d junction boxes\n", i+1, len(circuits[i])))
+		}
+
+		buf.WriteString(fmt.Sprintf("Part 1: %d\n", multiplyTop3))
+		fmt.Print(buf.String())
+		return
 	}
 
-	buf.WriteString(fmt.Sprintf("Part 1: %d\n", multiplyTop3))
-	fmt.Print(buf.String())
+	fmt.Println("Part 1:", multiplyTop3)
 }
 
 type JunctionBoxes []Vector
@@ -205,7 +210,7 @@ func renderCircuits(circuits [][]Vector, depth int) {
 	}
 }
 
-func part2(junctionBoxes JunctionBoxes) {
+func part2(junctionBoxes JunctionBoxes, withVisual bool) {
 
 	pairs := junctionBoxes.buildPairs()
 	jbIdxMap := junctionBoxes.buildIndexMap()
@@ -239,7 +244,9 @@ func part2(junctionBoxes JunctionBoxes) {
 		}
 	}
 
-	renderCircuits([][]Vector{maxCircuitPath}, 1)
+	if withVisual {
+		renderCircuits([][]Vector{maxCircuitPath}, 1)
+	}
 
 	fmt.Printf("Part 2: %d\n", multiplyLastConnectionX)
 }
@@ -251,13 +258,17 @@ func main() {
 		return
 	}
 
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
+
 	defer fmt.Print(utils.ShowCursor)
 
 	formattedData := formatData(data)
-	part1(formattedData)
+	part1(formattedData, withVisual)
 
-	time.Sleep(500 * time.Millisecond)
+	if withVisual {
+		time.Sleep(500 * time.Millisecond)
+	}
 
 	fmt.Print(utils.ShowCursor)
-	part2(formattedData)
+	part2(formattedData, withVisual)
 }

@@ -332,9 +332,11 @@ func main() {
 		return
 	}
 
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
+
 	formattedData := formatData(data)
-	part1(formattedData, true)
-	part2(formattedData, true)
+	part1(formattedData, withVisual)
+	part2(formattedData, withVisual)
 }
 
 func min(a, b int) int {
