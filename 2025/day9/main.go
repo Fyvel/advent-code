@@ -6,14 +6,16 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
-	viewportWidth  = 100
-	viewportHeight = 60
+	viewportWidth  = 16 * 10
+	viewportHeight = 9 * 10
 )
 
 func readData() ([]string, error) {
@@ -287,40 +289,75 @@ func part2(data Coords, withVisuals bool) {
 		segments[c] = Segment{Min: minX, Max: maxX}
 	}
 
-	largestRectangle := 0
-	var largestU, largestV Coord
-
 	displayCoords := normaliseAndScale(data, viewportWidth, viewportHeight)
 	coordToDisplay := make(map[Coord]Coord)
 	for i, coord := range data {
 		coordToDisplay[coord] = displayCoords[i]
 	}
 
-	for c1 := range redTiles {
-		for c2 := range redTiles {
-			if c1 == c2 {
-				continue
-			}
-
-			rectangle := calculateArea(c1, c2)
-
-			if !checkTiles(c1, c2, segments) {
-				continue
-			}
-
-			if withVisuals {
-				renderRectangleVisuals(displayCoords, data, c1, c2, largestRectangle, coordToDisplay, largestU, largestV)
-			}
-
-			if rectangle <= largestRectangle {
-				continue
-			}
-
-			largestRectangle = rectangle
-			largestU = c1
-			largestV = c2
-		}
+	redTilesList := make([]Coord, 0, len(redTiles))
+	for c := range redTiles {
+		redTilesList = append(redTilesList, c)
 	}
+
+	var (
+		mu                 sync.Mutex
+		renderMu           sync.Mutex
+		largestRectangle   int
+		largestU, largestV Coord
+	)
+
+	numWorkers := runtime.NumCPU()
+	chunkSize := (len(redTilesList) + numWorkers - 1) / numWorkers
+
+	var wg sync.WaitGroup
+
+	for w := 0; w < numWorkers; w++ {
+		start := w * chunkSize
+		end := min(start+chunkSize, len(redTilesList))
+		if start >= len(redTilesList) {
+			break
+		}
+
+		wg.Add(1)
+		go func(chunk []Coord) {
+			defer wg.Done()
+
+			for _, c1 := range chunk {
+				for _, c2 := range redTilesList {
+					if c1 == c2 {
+						continue
+					}
+
+					rectangle := calculateArea(c1, c2)
+
+					if !checkTiles(c1, c2, segments) {
+						continue
+					}
+
+					mu.Lock()
+					isNewLargest := rectangle > largestRectangle
+					if isNewLargest {
+						largestRectangle = rectangle
+						largestU = c1
+						largestV = c2
+					}
+					currentLargest := largestRectangle
+					currentU := largestU
+					currentV := largestV
+					mu.Unlock()
+
+					if withVisuals {
+						renderMu.Lock()
+						renderRectangleVisuals(displayCoords, data, c1, c2, currentLargest, coordToDisplay, currentU, currentV)
+						renderMu.Unlock()
+					}
+				}
+			}
+		}(redTilesList[start:end])
+	}
+
+	wg.Wait()
 
 	fmt.Println("Part 2:", largestRectangle)
 }
