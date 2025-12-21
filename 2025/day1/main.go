@@ -23,7 +23,6 @@ func main() {
 		return
 	}
 
-	// fmt.Println(data)
 	part1(data)
 	part2(data)
 }
@@ -47,7 +46,7 @@ func part1(data []string) {
 		}
 	}
 
-	fmt.Println("Password: ", count)
+	fmt.Println("Part 1: ", count)
 }
 
 func parseData(row string) (byte, int) {
@@ -70,7 +69,7 @@ func part2(data []string) {
 		}
 	}
 
-	fmt.Println("Password: ", w.carry)
+	fmt.Println("Part 2: ", w.carry)
 }
 
 func NewWheel() *Wheel {

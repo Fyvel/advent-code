@@ -37,7 +37,7 @@ type TreeNode struct {
 	Children []*TreeNode
 }
 
-func part1(data map[string][]string) {
+func part1(data map[string][]string, withVisual bool) {
 	// build Tree
 	root := &TreeNode{Value: "you"}
 	nodes := map[string]*TreeNode{
@@ -64,8 +64,11 @@ func part1(data map[string][]string) {
 	memo := make(map[*TreeNode][][]string)
 	visited := make(map[*TreeNode]bool)
 	paths := traverseTreeDFS(root, []string{}, visited, memo)
-	for _, path := range paths {
-		fmt.Println(strings.Join(path, " -> "))
+
+	if withVisual {
+		for _, path := range paths {
+			fmt.Println(strings.Join(path, " -> "))
+		}
 	}
 
 	fmt.Println("Part 1:", len(paths))
@@ -117,7 +120,7 @@ func traverseTreeDFS(node *TreeNode, currentPath []string, visited map[*TreeNode
 	return paths
 }
 
-func part2(data map[string][]string) {
+func part2(data map[string][]string, withVisual bool) {
 	root := &TreeNode{Value: "svr"}
 	nodes := map[string]*TreeNode{
 		"svr": root,
@@ -142,7 +145,7 @@ func part2(data map[string][]string) {
 	visited := make(map[*TreeNode]bool)
 
 	memo := make(map[MemoKey]int)
-	count := countPathsDFS(root, visited, false, false, memo)
+	count := countPathsDFS(root, visited, false, false, memo, withVisual)
 
 	fmt.Println("Part 2:", count)
 }
@@ -153,7 +156,7 @@ type MemoKey struct {
 	hasFft bool
 }
 
-func countPathsDFS(node *TreeNode, visited map[*TreeNode]bool, hasDac bool, hasFft bool, memo map[MemoKey]int) int {
+func countPathsDFS(node *TreeNode, visited map[*TreeNode]bool, hasDac bool, hasFft bool, memo map[MemoKey]int, withVisual bool) int {
 	// base
 	if visited[node] {
 		return 0
@@ -181,12 +184,15 @@ func countPathsDFS(node *TreeNode, visited map[*TreeNode]bool, hasDac bool, hasF
 		hasFft = true
 	case "out":
 		if hasDac && hasFft {
-			pathStr := []string{}
-			for n := range visited {
-				pathStr = append(pathStr, n.Value)
+			if withVisual {
+				pathStr := []string{}
+				for n := range visited {
+					pathStr = append(pathStr, n.Value)
+				}
+				pathStr = append(pathStr, "out")
+				fmt.Println(strings.Join(pathStr, " -> "))
 			}
-			pathStr = append(pathStr, "out")
-			fmt.Println(strings.Join(pathStr, " -> "))
+
 			return 1
 		}
 		return 0
@@ -195,7 +201,7 @@ func countPathsDFS(node *TreeNode, visited map[*TreeNode]bool, hasDac bool, hasF
 	// recursion
 	count := 0
 	for _, child := range node.Children {
-		count += countPathsDFS(child, visited, hasDac, hasFft, memo)
+		count += countPathsDFS(child, visited, hasDac, hasFft, memo, withVisual)
 	}
 
 	// store
@@ -211,6 +217,6 @@ func main() {
 	}
 
 	formattedData := formatData(data)
-	part1(formattedData)
-	part2(formattedData)
+	part1(formattedData, false)
+	part2(formattedData, false)
 }

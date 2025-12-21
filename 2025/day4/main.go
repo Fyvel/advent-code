@@ -1,6 +1,7 @@
 package main
 
 import (
+	"aoc2025/utils"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -60,18 +61,25 @@ func part1(grid [][]string) {
 		}
 	}
 
-	fmt.Println("Total rolls in reach:", totalRolls)
+	fmt.Println("Part 1:", totalRolls)
 
 }
 
-func part2(grid [][]string) {
+func part2(grid [][]string, withVisual bool) {
 	totalRolls := 0
 	lastCount := -1
+
+	if withVisual {
+		utils.EnterVisualMode()
+		fmt.Print(utils.ClearScreen + utils.MoveCursor)
+	}
 
 	for lastCount != totalRolls {
 		lastCount = totalRolls
 
-		renderGrid(grid)
+		if withVisual {
+			renderGrid(grid)
+		}
 		for r := range grid {
 			for c := range grid[r] {
 
@@ -104,44 +112,41 @@ func part2(grid [][]string) {
 			}
 		}
 
-		renderGrid(grid)
-		// replace `x`` with `.`` for smoother visual
-		for r := range grid {
-			for c := range grid[r] {
-				if grid[r][c] == "x" {
-					grid[r][c] = "."
+		if withVisual {
+			renderGrid(grid)
+			// replace `x` with `.` for smoother visual
+			for r := range grid {
+				for c := range grid[r] {
+					if grid[r][c] == "x" {
+						grid[r][c] = "."
+					}
 				}
 			}
 		}
 	}
-	fmt.Println("Total rolls in reach:", totalRolls)
+	if withVisual {
+		utils.ExitVisualMode()
+	}
 
+	fmt.Println("Part 2:", totalRolls)
 }
 
 func renderGrid(grid [][]string) {
-	blue := "\033[34m"
-	yellow := "\033[33m"
-	hotpink := "\033[38;5;205m"
-	reset := "\033[0m"
-
-	for r := range grid {
-		for c := range grid[r] {
-			cell := grid[r][c]
-			switch cell {
-			case ".":
-				fmt.Print(blue + cell + reset)
-			case "x":
-				fmt.Print(yellow + cell + reset)
-			case "@":
-				fmt.Print(hotpink + cell + reset)
-			default:
-				fmt.Print(cell)
-			}
+	cellRenderer := func(ctx utils.CellRenderContext) string {
+		switch ctx.Cell {
+		case ".":
+			return utils.Blue + ctx.Cell + utils.Reset
+		case "x":
+			return utils.Yellow + ctx.Cell + utils.Reset
+		case "@":
+			return utils.HotPink + ctx.Cell + utils.Reset
+		default:
+			return utils.BgBlack + utils.White + ctx.Cell + utils.Reset
 		}
-		fmt.Println()
 	}
-	fmt.Println()
-	time.Sleep(200 * time.Millisecond)
+
+	utils.RenderGrid(grid, -1, -1, nil, cellRenderer)
+	time.Sleep(100 * time.Millisecond)
 }
 
 func main() {
@@ -151,7 +156,9 @@ func main() {
 		return
 	}
 
+	withVisual := os.Getenv("AOC_VISUAL") == "1"
+
 	formattedData := formatData(data)
 	part1(formattedData)
-	part2(formattedData)
+	part2(formattedData, withVisual)
 }
